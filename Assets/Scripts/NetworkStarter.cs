@@ -5,7 +5,15 @@ public class NetworkStarter : MonoBehaviour
 {
     void OnGUI()
     {
-        if (!NetworkManager.Singleton.IsClient && !NetworkManager.Singleton.IsServer)
+        if (!Game.singleton.isMulti)
+        {
+            return;
+        }
+
+        if (
+            !NetworkManager.Singleton.IsClient
+            && !NetworkManager.Singleton.IsServer
+        )
         {
             if (GUI.Button(new Rect(10, 10, 150, 40), "Start Host"))
             {

@@ -2,9 +2,8 @@ using System;
 using Unity.Netcode;
 using UnityEngine;
 
-public class PlayerMovement : NetworkBehaviour
+public class BananaMovement : NetworkBehaviour
 {
-    public float speed = 5f;
     private Animator animator;
 
     void Start()
@@ -18,7 +17,10 @@ public class PlayerMovement : NetworkBehaviour
 
     void Update()
     {
-        if (!IsOwner) return; // Make sure only the owner moves their player
+        { // Make sure only the owner moves their player
+            if (Game.singleton.isMulti && !IsOwner)
+                return;
+        }
 
         float h = Input.GetAxis("Horizontal");
         float v = Input.GetAxis("Vertical");
@@ -29,6 +31,5 @@ public class PlayerMovement : NetworkBehaviour
         // Set the magnitude to determine if and how fast we are moving.
         float magnitude = new Vector2(h, v).magnitude;
         animator.SetFloat("magnitude", magnitude);
-        // transform.Translate(new Vector3(h, 0, v) * speed * Time.deltaTime);
     }
 }
