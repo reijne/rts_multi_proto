@@ -3,6 +3,15 @@ using UnityEngine;
 public class Plane : MonoBehaviour
 {
   public Grid grid;
+  private Material material;
+
+  void Start()
+  {
+    material = GetComponent<MeshRenderer>().material;
+    float scaleX = transform.localScale.x / grid.cellSize.x;
+    float scaleY = transform.localScale.z / grid.cellSize.z;
+    material.mainTextureScale = new Vector2(scaleX, scaleY);
+  }
 
   void OnMouseDown()
   {
