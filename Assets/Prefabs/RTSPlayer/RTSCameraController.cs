@@ -21,8 +21,8 @@ public class RTSPlayerCameraController : NetworkBehaviour
 
     // Get the camera that is a direct child of the CameraRig.
     camera = GetComponentInChildren<Camera>();
-    camera.tag = "MainCamera";
     camera.enabled = true;
+    camera.tag = "MainCamera";
   }
 
   void Update()

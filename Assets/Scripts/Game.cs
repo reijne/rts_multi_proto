@@ -6,60 +6,65 @@ using UnityEditor;
 
 public enum GameMode
 {
-    SinglePlayer,
-    MultiPlayer,
+  SinglePlayer,
+  MultiPlayer,
 }
 
 public class Game : MonoBehaviour
 {
-    public static Game singleton { get; private set; }
+  public static Game singleton { get; private set; }
 
-    public GameMode gameMode { get; private set; } = GameMode.SinglePlayer;
-    private DateTime start;
-    public int runtimeInMinutes = 1;
-    private TimeSpan maximumRuntime;
+  // Settings for the game mode of our current instance.
+  private GameMode gameMode = GameMode.SinglePlayer;
+  public bool isMulti => gameMode == GameMode.MultiPlayer;
 
-    public bool isMulti => gameMode == GameMode.MultiPlayer;
+  // // Settings for the camera in our current instance.
+  // private Camera mainCamera;
+  // public Camera MainCamera => mainCamera??= Camera.main;
 
-    void Start()
+  // Variables for stopping the game automatically.
+  private DateTime start;
+  public int runtimeInMinutes = 1;
+  private TimeSpan maximumRuntime;
+
+  void Awake()
+  {
+    if (singleton != null && singleton != this)
     {
-        if (singleton != null && singleton != this)
-        {
-            Destroy(gameObject);
-            return;
-        }
-
-        singleton = this;
-        DontDestroyOnLoad(gameObject);
-        start = DateTime.Now;
-        maximumRuntime = new TimeSpan(
-            hours: 0,
-            minutes: runtimeInMinutes,
-            seconds: 10
-        );
+      Destroy(gameObject);
+      return;
     }
 
-    void FixedUpdate()
-    {
-        ExitWhenRuntimeExceeded();
-    }
+    singleton = this;
+    DontDestroyOnLoad(gameObject);
+    start = DateTime.Now;
+    maximumRuntime = new TimeSpan(
+      hours: 0,
+      minutes: runtimeInMinutes,
+      seconds: 0
+    );
+  }
 
-    /// <summary>
-    /// When we are over the maximum runtime, stop the game.
-    /// </summary>
-    void ExitWhenRuntimeExceeded()
+  void FixedUpdate()
+  {
+    ExitWhenRuntimeExceeded();
+  }
+
+  /// <summary>
+  /// When we are over the maximum runtime, stop the game.
+  /// </summary>
+  void ExitWhenRuntimeExceeded()
+  {
+    if (DateTime.Now - start > maximumRuntime)
     {
-        if (DateTime.Now - start > maximumRuntime)
-        {
-            Debug.LogError(
-                "Maximum runtime reached. Exiting the game. runtime:"
-                    + maximumRuntime
-            );
+      Debug.LogError(
+        "Maximum runtime reached. Exiting the game. runtime:" + maximumRuntime
+      );
 #if UNITY_EDITOR
-            EditorApplication.isPlaying = false; // Stop play mode
+      EditorApplication.isPlaying = false; // Stop play mode
 #else
-            Application.Quit(); // Quit app if built
+      Application.Quit(); // Quit app if built
 #endif
-        }
     }
+  }
 }
