@@ -68,4 +68,18 @@ public class Game : MonoBehaviour
 #endif
         }
     }
+
+    public Maybe<Vector3> GetHit()
+    {
+        RaycastHit hit;
+        Ray ray = Camera.main.ScreenPointToRay(Input.mousePosition);
+        if (Physics.Raycast(ray, out hit, 100f))
+        {
+            if (hit.transform != null)
+            {
+                return Maybe<Vector3>.Of(hit.point);
+            }
+        }
+        return Maybe<Vector3>.None;
+    }
 }

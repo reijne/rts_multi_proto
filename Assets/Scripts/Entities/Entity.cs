@@ -2,17 +2,19 @@ using UnityEngine;
 
 public class Entity : MonoBehaviour
 {
-    private bool selected = false;
+    private bool isSelected = false;
+
+    public bool IsSelected => isSelected;
 
     public void Select()
     {
-        selected = true;
+        isSelected = true;
         GetComponent<Renderer>().material.color = Color.green;
     }
 
     public void Deselect()
     {
-        selected = false;
+        isSelected = false;
         GetComponent<Renderer>().material.color = Color.white;
     }
 }

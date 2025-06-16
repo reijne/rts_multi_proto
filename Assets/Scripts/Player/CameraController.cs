@@ -7,6 +7,7 @@ public class CameraController : NetworkBehaviour
     public float zoomSpeed = 1000f;
     public float minY = 1f;
     public float maxY = 100f;
+    public float zoomMovementSpeedMultiplier = 0.1f;
 
     private new Camera camera;
 
@@ -42,7 +43,13 @@ public class CameraController : NetworkBehaviour
             0,
             Input.GetAxis("Vertical")
         );
-        transform.position += moveSpeed * Time.deltaTime * input;
+
+        float zoomMult = Mathf.Max(
+            1,
+            transform.position.y * zoomMovementSpeedMultiplier
+        );
+
+        transform.position += zoomMult * moveSpeed * Time.deltaTime * input;
     }
 
     void zoom()

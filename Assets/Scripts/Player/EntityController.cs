@@ -49,17 +49,7 @@ public class EntityController : MonoBehaviour
                 if (movingEntity == null)
                     return;
 
-                RaycastHit hit;
-                if (
-                    !Physics.Raycast(
-                        Camera.main.ScreenPointToRay(Input.mousePosition),
-                        out hit,
-                        100f
-                    )
-                )
-                    return;
-
-                movingEntity.MoveTo(hit.point);
+                Game.singleton.GetHit().ifJust(movingEntity.MoveTo);
             });
         }
     }

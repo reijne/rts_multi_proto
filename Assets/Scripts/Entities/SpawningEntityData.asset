@@ -9,8 +9,7 @@ MonoBehaviour:
   m_GameObject: {fileID: 0}
   m_Enabled: 1
   m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 26513369c8863438d88f949649de2745, type: 3}
-  m_Name: CubeMovingEntityData
+  m_Script: {fileID: 11500000, guid: bf42814cceec54c98be285833f225a5b, type: 3}
+  m_Name: SpawningEntityData
   m_EditorClassIdentifier: 
-  movementSpeed: 5
-  closeEnoughDistance: 1
+  cooldown: 1

@@ -15,17 +15,13 @@ public class Planer : MonoBehaviour
 
     void OnMouseDown()
     {
-        RaycastHit hit;
-        Ray ray = Camera.main.ScreenPointToRay(Input.mousePosition);
-        if (Physics.Raycast(ray, out hit, 100f))
-        {
-            if (hit.transform != null)
+        Game.singleton.GetHit()
+            .ifJust(hit =>
             {
-                Debug.Log("Hit point:" + hit.point);
-                Vector3Int cell = grid.WorldToCell(hit.point);
+                Debug.Log("Hit point:" + hit);
+                Vector3Int cell = grid.WorldToCell(hit);
                 DebugHighlightCellBox(cell);
-            }
-        }
+            });
     }
 
     /// <summary>
