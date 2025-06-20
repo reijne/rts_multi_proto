@@ -10,4 +10,9 @@ public class SpawningEntityData : ScriptableObject
     private float cooldown = 1f;
 
     public float Cooldown => cooldown;
+
+    [SerializeField]
+    private int unitCost = 1;
+
+    public int UnitCost => unitCost;
 }

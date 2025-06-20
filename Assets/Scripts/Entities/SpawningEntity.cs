@@ -14,7 +14,7 @@ public class SpawningEntity : MonoBehaviour
     // Location where units will move towards upon spawning.
     private Vector3 spawnPosition;
     private float timeOfLastSpawn;
-    private int newUnitsToSpawn = 0;
+    private int UnitQueue = 0;
 
     void Start()
     {
@@ -55,24 +55,34 @@ public class SpawningEntity : MonoBehaviour
 
     void handleKeyboard()
     {
-        if (entity.IsSelected && Input.GetKeyDown(KeyCode.Space))
+        if (
+            entity.IsSelected
+            && Input.GetKeyDown(KeyCode.Space)
+            && ResourceController.singleton.TrySpendEnergy(
+                spawningEntityData.UnitCost
+            )
+        )
         {
-            StartSpawning();
+            AddUnitToQueue();
         }
     }
 
     void spawn()
     {
         if (
-            newUnitsToSpawn <= 0
+            UnitQueue <= 0
             || timeOfLastSpawn + spawningEntityData.Cooldown > Time.time
         )
             return;
 
         timeOfLastSpawn = Time.time;
-        newUnitsToSpawn -= 1;
+        UnitQueue -= 1;
+        ResourceController.singleton.DecrementGlobalQueue();
 
         Vector3 direction = (spawnPosition - transform.position).normalized;
+        // Ensure we do not spawn inside the building, just pick "forward".
+        if (direction == Vector3.zero)
+            direction = transform.forward;
 
         // Half extents of the building in world space
         Vector3 halfExtents = transform.localScale / 2f;
@@ -104,8 +114,9 @@ public class SpawningEntity : MonoBehaviour
         spawnPosition = pos;
     }
 
-    public void StartSpawning()
+    public void AddUnitToQueue()
     {
-        newUnitsToSpawn += 1;
+        UnitQueue += 1;
+        ResourceController.singleton.IncrementGlobalQueue();
     }
 }
