@@ -1,14 +1,40 @@
 using System;
 using System.Collections.Generic;
+using System.Linq;
 using UnityEngine;
 
 public class EntityController : MonoBehaviour
 {
-    private Collider[] selection = new Collider[0];
+    public static EntityController singleton { get; private set; }
+
+    public List<Entity> entities = new List<Entity>();
+    private List<Entity> selection = new List<Entity>();
     private Vector2? mouseDown;
     private Vector2? mouseUp;
 
-    public float selectionHeight = 1f;
+    public float selectionHeight;
+
+    public void Add(Entity entity)
+    {
+        entities.Add(entity);
+    }
+
+    public void Remove(Entity entity)
+    {
+        entities.Remove(entity);
+    }
+
+    void Awake()
+    {
+        if (singleton != null && singleton != this)
+        {
+            Destroy(gameObject);
+            return;
+        }
+
+        singleton = this;
+        DontDestroyOnLoad(gameObject);
+    }
 
     void Update()
     {
@@ -41,10 +67,9 @@ public class EntityController : MonoBehaviour
     {
         if (Input.GetMouseButtonDown(1))
         {
-            performActionOnSelection(collider =>
+            performActionOnSelection(entity =>
             {
-                MovingEntity movingEntity =
-                    collider.GetComponent<MovingEntity>();
+                MovingEntity movingEntity = entity.GetComponent<MovingEntity>();
 
                 if (movingEntity == null)
                     return;
@@ -59,7 +84,7 @@ public class EntityController : MonoBehaviour
         if (Input.GetKeyDown(KeyCode.Escape))
         {
             deselect();
-            selection = new Collider[0];
+            selection.Clear();
         }
     }
 
@@ -91,80 +116,60 @@ public class EntityController : MonoBehaviour
 
     void performSelection()
     {
-        if (mouseDown == null || mouseUp == null)
+        if (mouseDown == null || mouseUp == null || entities.Count == 0)
             return;
 
         Vector2 min = Vector2.Min(mouseDown.Value, mouseUp.Value);
         Vector2 max = Vector2.Max(mouseDown.Value, mouseUp.Value);
-
         mouseDown = null;
         mouseUp = null;
 
-        // Sample world points at rectangle corners (assuming a flat ground plane at y = 0)
-        Vector3 p1 = ScreenToWorldOnPlane(min);
-        Debug.Log("World p1:" + p1);
-
-        Vector3 p2 = ScreenToWorldOnPlane(max);
-        Debug.Log("World p2:" + p2);
-
-        Vector3 center = (p1 + p2) / 2f;
-        Debug.Log("center:" + center);
-
-        Vector3 halfExtents = new Vector3(
-            Mathf.Abs(p2.x - p1.x) / 2f,
-            selectionHeight / 2f,
-            Mathf.Abs(p2.z - p1.z) / 2f
+        Rect selectionRect = new Rect(
+            min.x,
+            Screen.height - max.y,
+            max.x - min.x,
+            max.y - min.y
         );
-        Debug.Log("halfExtents" + halfExtents);
 
         deselect();
 
-        selection = Physics.OverlapBox(
-            center + Vector3.up * (selectionHeight / 2f),
-            halfExtents
-        );
+        selection.Clear();
+        for (int i = 0; i < entities.Count; i++)
+        {
+            Entity entity = entities[i];
 
+            entity
+                .GetScreenBoundsRect()
+                .ifJust(entityScreenRect =>
+                {
+                    // Here we also allow negative overlap, meaning the
+                    // selection is within the entities box.
+                    if (entityScreenRect.Overlaps(selectionRect, true))
+                    {
+                        selection.Add(entity);
+                    }
+                });
+        }
         select();
     }
 
-    void performActionOnSelection(Action<Collider> performAction)
+    void performActionOnSelection(Action<Entity> performAction)
     {
         Debug.Log("performAction selection" + selection);
-        Debug.Log("selection.length" + selection.Length);
-        for (int i = 0; i < selection.Length; i++)
+        Debug.Log("selection.length" + selection.Count);
+        for (int i = 0; i < selection.Count; i++)
         {
             performAction(selection[i]);
         }
     }
 
-    void performActionOnSelectedEntity(Action<Entity> performAction)
-    {
-        performActionOnSelection(collider =>
-        {
-            Entity entity = collider.gameObject.GetComponent<Entity>();
-            if (entity != null)
-                performAction(entity);
-        });
-    }
-
     void deselect()
     {
-        performActionOnSelectedEntity(entity => entity.Deselect());
+        performActionOnSelection(entity => entity.Deselect());
     }
 
     void select()
     {
-        performActionOnSelectedEntity(entity => entity.Select());
-    }
-
-    Vector3 ScreenToWorldOnPlane(Vector2 screenPosition)
-    {
-        Ray ray = Camera.main.ScreenPointToRay(screenPosition);
-        Plane plane = new Plane(Vector3.up, Vector3.zero); // Horizontal plane at y=0
-
-        if (plane.Raycast(ray, out float enter))
-            return ray.GetPoint(enter);
-
-        return Vector3.zero;
+        performActionOnSelection(entity => entity.Select());
     }
 }

@@ -1,9 +1,13 @@
+using System;
 using UnityEngine;
 
 public class SpawningEntity : MonoBehaviour
 {
     public SpawningEntityData spawningEntityData;
+    public GameObject spawnPointIndicator;
     public GameObject prefab;
+    public event Action OnSelected;
+    public event Action OnDeselected;
 
     private Entity entity;
 
@@ -16,7 +20,18 @@ public class SpawningEntity : MonoBehaviour
     {
         timeOfLastSpawn = Time.time;
         entity = GetComponent<Entity>();
+        spawnPosition = transform.position;
+
+        entity.OnSelected += showSpawnPoint;
+        entity.OnDeselected += hideSpawnPoint;
+
+        // Hide it initially
+        spawnPointIndicator.SetActive(false);
     }
+
+    void showSpawnPoint() => spawnPointIndicator.SetActive(true);
+
+    void hideSpawnPoint() => spawnPointIndicator.SetActive(false);
 
     void Update()
     {
@@ -33,6 +48,7 @@ public class SpawningEntity : MonoBehaviour
                 .ifJust(hit =>
                 {
                     spawnPosition = hit;
+                    spawnPointIndicator.transform.position = hit;
                 });
         }
     }
