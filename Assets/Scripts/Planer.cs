@@ -18,7 +18,6 @@ public class Planer : MonoBehaviour
         Game.singleton.GetHit()
             .ifJust(hit =>
             {
-                Debug.Log("Hit point:" + hit);
                 Vector3Int cell = grid.WorldToCell(hit);
                 DebugHighlightCellBox(cell);
             });

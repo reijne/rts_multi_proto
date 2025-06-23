@@ -155,8 +155,6 @@ public class EntityController : MonoBehaviour
 
     void performActionOnSelection(Action<Entity> performAction)
     {
-        Debug.Log("performAction selection" + selection);
-        Debug.Log("selection.length" + selection.Count);
         for (int i = 0; i < selection.Count; i++)
         {
             performAction(selection[i]);
