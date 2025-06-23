@@ -23,7 +23,7 @@ public class Entity : MonoBehaviour
     /// </summary>
     public Maybe<Rect> GetScreenBoundsRect()
     {
-        Renderer renderer = GetComponent<Renderer>();
+        Renderer renderer = GetComponentInChildren<Renderer>();
         if (renderer == null)
         {
             return Maybe<Rect>.None;
@@ -84,14 +84,14 @@ public class Entity : MonoBehaviour
     public void Select()
     {
         isSelected = true;
-        GetComponent<Renderer>().material.color = Color.green;
+        GetComponentInChildren<Renderer>().material.color = Color.green;
         OnSelected?.Invoke();
     }
 
     public void Deselect()
     {
         isSelected = false;
-        GetComponent<Renderer>().material.color = Color.white;
+        GetComponentInChildren<Renderer>().material.color = Color.white;
         OnDeselected?.Invoke();
     }
 }

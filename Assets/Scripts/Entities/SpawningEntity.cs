@@ -98,7 +98,7 @@ public class SpawningEntity : MonoBehaviour
         Vector3 instantiatePosition = transform.position + spawnOffset;
 
         // Match Y with the building's base Y
-        instantiatePosition.y = transform.position.y;
+        instantiatePosition.y = 0;
 
         GameObject ent = Instantiate(
             prefab,
