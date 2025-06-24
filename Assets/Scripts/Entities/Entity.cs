@@ -9,10 +9,12 @@ public class Entity : MonoBehaviour
 
     public event Action OnSelected;
     public event Action OnDeselected;
+    Collider selectCollider;
 
     void Start()
     {
         EntityController.singleton.Add(this);
+        selectCollider = GetComponent<Collider>();
     }
 
     /// <summary>
@@ -23,12 +25,7 @@ public class Entity : MonoBehaviour
     /// </summary>
     public Maybe<Rect> GetScreenBoundsRect()
     {
-        Renderer renderer = GetComponentInChildren<Renderer>();
-        if (renderer == null)
-        {
-            return Maybe<Rect>.None;
-        }
-        Bounds bounds = renderer.bounds;
+        Bounds bounds = selectCollider.bounds;
 
         // Convert the 8 corners of the bounding box to screen space
         Vector3[] corners = new Vector3[8];
