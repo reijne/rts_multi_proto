@@ -47,7 +47,7 @@ public class ResourceController : MonoBehaviour
 
     void UpdateResourceText()
     {
-        resourceText.text = $"Energy: {Energy}";
+        resourceText.text = Energy.ToString();
     }
 
     public void IncrementGlobalQueue()
@@ -64,6 +64,6 @@ public class ResourceController : MonoBehaviour
 
     void UpdateGlobalQueueTest()
     {
-        globalQueueText.text = $"Global Unit Queue: {GlobalQueue}";
+        globalQueueText.text = GlobalQueue.ToString();
     }
 }
