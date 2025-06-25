@@ -12,5 +12,5 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: bf42814cceec54c98be285833f225a5b, type: 3}
   m_Name: BarracksSpawningEntityData
   m_EditorClassIdentifier: 
-  cooldown: 5
+  cooldown: 0.2
   unitCost: 1

@@ -67,16 +67,35 @@ public class EntityController : MonoBehaviour
     {
         if (Input.GetMouseButtonDown(1))
         {
-            performActionOnSelection(entity =>
+            Game.singleton.GetHit().ifJust(moveSelectedEntities);
+        }
+    }
+
+    Vector3 getGridOffset(int gridSize, int indexInSelection)
+    {
+        int row = indexInSelection / gridSize;
+        int col = indexInSelection % gridSize;
+
+        float offsetX = col - (gridSize - 1) / 2f;
+        float offsetZ = row - (gridSize - 1) / 2f;
+        Vector3 offset = new Vector3(offsetX, 0, offsetZ);
+        return offset;
+    }
+
+    void moveSelectedEntities(Vector3 hit)
+    {
+        int gridSize = (int)Mathf.Ceil(Mathf.Sqrt(selection.Count));
+        performActionOnSelection(
+            (entity, idx) =>
             {
                 MovingEntity movingEntity = entity.GetComponent<MovingEntity>();
 
                 if (movingEntity == null)
                     return;
 
-                Game.singleton.GetHit().ifJust(movingEntity.MoveTo);
-            });
-        }
+                movingEntity.MoveTo(hit + getGridOffset(gridSize, idx));
+            }
+        );
     }
 
     void handleKeyboard()
@@ -153,21 +172,21 @@ public class EntityController : MonoBehaviour
         select();
     }
 
-    void performActionOnSelection(Action<Entity> performAction)
+    void performActionOnSelection(Action<Entity, int> performAction)
     {
         for (int i = 0; i < selection.Count; i++)
         {
-            performAction(selection[i]);
+            performAction(selection[i], i);
         }
     }
 
     void deselect()
     {
-        performActionOnSelection(entity => entity.Deselect());
+        performActionOnSelection((entity, _) => entity.Deselect());
     }
 
     void select()
     {
-        performActionOnSelection(entity => entity.Select());
+        performActionOnSelection((entity, _) => entity.Select());
     }
 }
