@@ -3,17 +3,25 @@ using UnityEngine;
 
 public class Entity : MonoBehaviour
 {
+    public EntityData entityData;
+    public event Action OnSelected;
+    public event Action OnDeselected;
     private bool isSelected = false;
 
     public bool IsSelected => isSelected;
 
-    public event Action OnSelected;
-    public event Action OnDeselected;
     Collider selectCollider;
 
     void Start()
     {
-        EntityController.singleton.Add(this);
+        if (entityData.Actor == EntityActor.player)
+        {
+            EntityController.singleton.Add(this);
+        }
+        else if (entityData.Actor == EntityActor.enemy)
+        {
+            EnemyController.singleton.Add(this);
+        }
         selectCollider = GetComponent<Collider>();
     }
 

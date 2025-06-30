@@ -5,7 +5,13 @@ public class MovingEntity : MonoBehaviour
     public MovingEntityData movingEntityData;
     Animator animator;
 
-    Vector3? target;
+    Vector3? moveTarget;
+    Maybe<Transform> transformTarget = Maybe<Transform>.Nothing;
+
+    Vector3? target =>
+        moveTarget != null
+            ? moveTarget
+            : transformTarget.CaseOf<Vector3?>(t => t.position, () => null);
 
     void Start()
     {
@@ -20,7 +26,12 @@ public class MovingEntity : MonoBehaviour
             destination.z
         );
         transform.LookAt(newTarget);
-        target = newTarget;
+        moveTarget = newTarget;
+    }
+
+    public void MoveTo(Transform target)
+    {
+        transformTarget = Maybe<Transform>.Of(target);
     }
 
     void Update()
@@ -36,7 +47,7 @@ public class MovingEntity : MonoBehaviour
             return;
         }
 
-        float distance = Vector3.Distance(transform.position, target.Value);
+        float distance = Vector3.Distance(transform.position, moveTarget.Value);
 
         if (distance <= movingEntityData.CloseEnoughDistance)
         {
@@ -45,7 +56,7 @@ public class MovingEntity : MonoBehaviour
         }
 
         SetMoving(true);
-        Vector3 direction = (target.Value - transform.position).normalized;
+        Vector3 direction = (moveTarget.Value - transform.position).normalized;
         transform.position +=
             direction * movingEntityData.MovementSpeed * Time.deltaTime;
     }

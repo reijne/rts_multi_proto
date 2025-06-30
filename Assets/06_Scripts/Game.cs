@@ -80,6 +80,6 @@ public class Game : MonoBehaviour
                 return Maybe<Vector3>.Of(hit.point);
             }
         }
-        return Maybe<Vector3>.None;
+        return Maybe<Vector3>.Nothing;
     }
 }

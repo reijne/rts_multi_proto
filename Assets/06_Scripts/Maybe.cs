@@ -11,20 +11,20 @@ public struct Maybe<T>
             some(_value);
     }
 
-    public void ifNone(Action none)
+    public void ifNothing(Action nothing)
     {
         if (!hasValue)
         {
-            none();
+            nothing();
         }
     }
 
-    public void CaseOf(Action<T> some, Action none)
+    public TResult CaseOf<TResult>(Func<T, TResult> some, Func<TResult> nothing)
     {
         if (hasValue)
-            some(_value);
-        else if (none != null)
-            none();
+            return some(_value);
+
+        return nothing();
     }
 
     private Maybe(T value)
@@ -35,5 +35,5 @@ public struct Maybe<T>
 
     public static Maybe<T> Of(T value) => new Maybe<T>(value);
 
-    public static Maybe<T> None => new Maybe<T>();
+    public static Maybe<T> Nothing => new Maybe<T>();
 }

@@ -74,6 +74,8 @@ GameObject:
   m_Component:
   - component: {fileID: 388476416}
   - component: {fileID: 388476415}
+  - component: {fileID: 4263073392192623399}
+  - component: {fileID: 8496391533427422733}
   m_Layer: 0
   m_Name: GruntPolyart
   m_TagString: Untagged
@@ -108,7 +110,7 @@ Animator:
   m_GameObject: {fileID: 388476414}
   m_Enabled: 1
   m_Avatar: {fileID: 9000000, guid: eb5e3fc8d0caf3945a6effdb6372a9c7, type: 3}
-  m_Controller: {fileID: 9100000, guid: e58bf4525b7cc80459d6f7ff033ea067, type: 2}
+  m_Controller: {fileID: 9100000, guid: 3c179bdc78bda496fa70045ba85d2279, type: 2}
   m_CullingMode: 1
   m_UpdateMode: 0
   m_ApplyRootMotion: 0
@@ -120,6 +122,32 @@ Animator:
   m_AllowConstantClipSamplingOptimization: 1
   m_KeepAnimatorStateOnDisable: 0
   m_WriteDefaultValuesOnDisable: 0
+--- !u!114 &4263073392192623399
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 388476414}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 87b5f92813811418e9894df162c7f2d1, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  entityData: {fileID: 11400000, guid: fb820b956b010427d8c436e68efb0615, type: 2}
+--- !u!114 &8496391533427422733
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 388476414}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: c1481c728491449b0bfc32433a04938d, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  movingEntityData: {fileID: 11400000, guid: 59b9036cc91d7479da87beb9fda9953e, type: 2}
 --- !u!1 &408409025
 GameObject:
   m_ObjectHideFlags: 0
