@@ -77,9 +77,9 @@ public class Game : MonoBehaviour
         {
             if (hit.transform != null)
             {
-                return Maybe<Vector3>.Of(hit.point);
+                return Maybe<Vector3>.of(hit.point);
             }
         }
-        return Maybe<Vector3>.Nothing;
+        return Maybe<Vector3>.nothing;
     }
 }

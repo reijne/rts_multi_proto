@@ -21,6 +21,7 @@ public class EntityController : MonoBehaviour
     public void Remove(Entity entity)
     {
         entities.Remove(entity);
+        selection.Remove(entity);
     }
 
     void Awake()

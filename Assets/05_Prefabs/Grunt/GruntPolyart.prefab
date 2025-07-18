@@ -147,7 +147,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: c1481c728491449b0bfc32433a04938d, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  movingEntityData: {fileID: 11400000, guid: 59b9036cc91d7479da87beb9fda9953e, type: 2}
+  movingData: {fileID: 11400000, guid: 59b9036cc91d7479da87beb9fda9953e, type: 2}
 --- !u!1 &408409025
 GameObject:
   m_ObjectHideFlags: 0

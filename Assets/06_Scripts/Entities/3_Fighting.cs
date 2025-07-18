@@ -3,15 +3,20 @@ using UnityEngine;
 public class Fighting : MonoBehaviour
 {
     public FightingData fightingData;
-    private Entity selfEntity;
+    private Entity entity;
 
     void Start()
     {
-        selfEntity = GetComponent<Entity>();
+        entity = GetComponent<Entity>();
     }
 
     void Update()
     {
+        if (Input.GetKeyDown(KeyCode.F))
+        {
+            entity.animator.ifJust(a => a.SetTrigger("Attack"));
+        }
+        // TODO: Figure out if this can ever be performant enough for many bois.
         Collider[] hits = Physics.OverlapSphere(
             transform.position,
             fightingData.Range
@@ -27,14 +32,14 @@ public class Fighting : MonoBehaviour
                 continue;
 
             // Check for opposing team
-            if (targetEntity.entityData.Actor == selfEntity.entityData.Actor)
+            if (targetEntity.entityData.Actor == entity.entityData.Actor)
                 continue;
 
             // Deal damage
             Health targetHealth = targetEntity.GetComponent<Health>();
             if (targetHealth != null)
             {
-                targetHealth.Damage(fightingData.Damage);
+                targetHealth.GetHit(fightingData.Damage);
                 break; // Attack one target per frame (simple MVP)
             }
         }

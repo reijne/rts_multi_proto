@@ -472,6 +472,8 @@ GameObject:
   - component: {fileID: 5567095277936929939}
   - component: {fileID: -7083048463155683593}
   - component: {fileID: 2470753113276076270}
+  - component: {fileID: 166009791499179604}
+  - component: {fileID: 4454741832001731192}
   m_Layer: 0
   m_Name: FootmanPolyart
   m_TagString: Untagged
@@ -543,7 +545,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: c1481c728491449b0bfc32433a04938d, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  movingEntityData: {fileID: 11400000, guid: 09ce538dfe9f447bc94a9c1c8d0beae8, type: 2}
+  movingData: {fileID: 11400000, guid: 09ce538dfe9f447bc94a9c1c8d0beae8, type: 2}
 --- !u!65 &2470753113276076270
 BoxCollider:
   m_ObjectHideFlags: 0
@@ -565,6 +567,32 @@ BoxCollider:
   serializedVersion: 3
   m_Size: {x: 1.2, y: 1.9, z: 1}
   m_Center: {x: 0, y: 0.95, z: 0}
+--- !u!114 &166009791499179604
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 928723031}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 1d8403c494f57419992ce21870e3d48c, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  fightingData: {fileID: 11400000, guid: 6a3bdbd4eda694988b323911e1c82573, type: 2}
+--- !u!114 &4454741832001731192
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 928723031}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: f0f039bd37957479f820d2fe9538c47d, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  healthData: {fileID: 11400000, guid: 7ddce1701972641a5a71e8f88990820c, type: 2}
 --- !u!1 &1037657034
 GameObject:
   m_ObjectHideFlags: 0

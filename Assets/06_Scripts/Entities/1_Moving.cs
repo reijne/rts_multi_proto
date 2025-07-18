@@ -3,19 +3,19 @@ using UnityEngine;
 public class Moving : MonoBehaviour
 {
     public MovingData movingData;
-    Animator animator;
+    private Entity entity;
 
     Vector3? moveTarget;
-    Maybe<Transform> transformTarget = Maybe<Transform>.Nothing;
+    Maybe<Transform> transformTarget = Maybe<Transform>.nothing;
 
     Vector3? target =>
         moveTarget != null
             ? moveTarget
-            : transformTarget.CaseOf<Vector3?>(t => t.position, () => null);
+            : transformTarget.caseOf<Vector3?>(t => t.position, () => null);
 
     void Start()
     {
-        animator = GetComponent<Animator>();
+        entity = GetComponent<Entity>();
     }
 
     public void MoveTo(Vector3 destination)
@@ -31,7 +31,7 @@ public class Moving : MonoBehaviour
 
     public void MoveTo(Transform target)
     {
-        transformTarget = Maybe<Transform>.Of(target);
+        transformTarget = Maybe<Transform>.of(target);
     }
 
     void Update()
@@ -64,6 +64,6 @@ public class Moving : MonoBehaviour
     // Set the animator `isMoving` param.
     void SetMoving(bool moving)
     {
-        animator.SetBool("isMoving", moving);
+        entity.animator.ifJust(a => a.SetBool("isMoving", moving));
     }
 }

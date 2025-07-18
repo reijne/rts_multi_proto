@@ -24,6 +24,7 @@ public class Entity : MonoBehaviour
             EnemyController.singleton.Add(this);
         }
         selectCollider = GetComponent<Collider>();
+        animator = Maybe<Animator>.fromNullable(GetComponent<Animator>());
     }
 
     /// <summary>
@@ -82,7 +83,7 @@ public class Entity : MonoBehaviour
             minY = Mathf.Min(minY, corner.y);
             maxY = Mathf.Max(maxY, corner.y);
         }
-        return Maybe<Rect>.Of(
+        return Maybe<Rect>.of(
             new Rect(minX, Screen.height - maxY, maxX - minX, maxY - minY)
         );
     }

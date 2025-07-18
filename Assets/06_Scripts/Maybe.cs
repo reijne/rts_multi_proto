@@ -19,7 +19,7 @@ public struct Maybe<T>
         }
     }
 
-    public TResult CaseOf<TResult>(Func<T, TResult> some, Func<TResult> nothing)
+    public TResult caseOf<TResult>(Func<T, TResult> some, Func<TResult> nothing)
     {
         if (hasValue)
             return some(_value);
@@ -33,7 +33,10 @@ public struct Maybe<T>
         hasValue = true;
     }
 
-    public static Maybe<T> Of(T value) => new Maybe<T>(value);
+    public static Maybe<T> of(T value) => new Maybe<T>(value);
 
-    public static Maybe<T> Nothing => new Maybe<T>();
+    public static Maybe<T> fromNullable(T? value) =>
+        value != null ? of(value) : nothing;
+
+    public static Maybe<T> nothing => new Maybe<T>();
 }
