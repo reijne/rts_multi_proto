@@ -87,12 +87,12 @@ public class EntityController : MonoBehaviour
         performActionOnSelection(
             (entity, idx) =>
             {
-                MovingEntity movingEntity = entity.GetComponent<MovingEntity>();
+                Moving moving = entity.GetComponent<Moving>();
 
-                if (movingEntity == null)
+                if (moving == null)
                     return;
 
-                movingEntity.MoveTo(hit + getGridOffset(gridSize, idx));
+                moving.MoveTo(hit + getGridOffset(gridSize, idx));
             }
         );
     }

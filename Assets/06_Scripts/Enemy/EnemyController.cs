@@ -11,7 +11,7 @@ public class EnemyController : MonoBehaviour
     public void Add(Entity entity)
     {
         entities.Add(entity);
-        MovingEntity movingEntity = entity.GetComponent<MovingEntity>();
+        Moving movingEntity = entity.GetComponent<Moving>();
         if (movingEntity != null)
         {
             movingEntity.MoveTo(new Vector3(0, 0, 0));
