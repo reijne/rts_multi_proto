@@ -6,12 +6,10 @@ public class Moving : MonoBehaviour
     private Entity entity;
 
     Vector3? moveTarget;
-    Maybe<Transform> transformTarget = Maybe<Transform>.nothing;
-
+    Maybe<Transform> transformTarget;
     Vector3? target =>
-        moveTarget != null
-            ? moveTarget
-            : transformTarget.caseOf<Vector3?>(t => t.position, () => null);
+        moveTarget
+        ?? transformTarget.caseOf<Vector3?>(t => t.position, () => null);
 
     void Start()
     {
@@ -61,7 +59,7 @@ public class Moving : MonoBehaviour
             direction * movingData.MovementSpeed * Time.deltaTime;
     }
 
-    // Set the animator `isMoving` param.
+    // Set the animator `isMoving` param, enabling the Run animation.
     void SetMoving(bool moving)
     {
         entity.animator.ifJust(a => a.SetBool("isMoving", moving));

@@ -5,6 +5,7 @@ public class Entity : MonoBehaviour
 {
     public EntityData entityData;
     public Maybe<Animator> animator;
+
     public event Action OnSelected;
     public event Action OnDeselected;
     private bool isSelected = false;
