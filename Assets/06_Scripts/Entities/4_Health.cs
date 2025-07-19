@@ -1,3 +1,4 @@
+using System;
 using UnityEngine;
 
 public class Health : MonoBehaviour
@@ -6,6 +7,9 @@ public class Health : MonoBehaviour
     private Entity entity;
 
     private float currentHealth;
+    private bool isAlive = true;
+
+    public bool IsAlive => isAlive;
 
     void Start()
     {
@@ -23,21 +27,35 @@ public class Health : MonoBehaviour
 
     public void GetHit(float amount)
     {
+        if (!isAlive)
+        {
+            return;
+        }
+
         currentHealth -= amount;
         if (currentHealth <= 0)
         {
             Die();
+            return;
         }
-        else
-        {
-            entity.animator.ifJust(a => a.SetTrigger("GetHit"));
-        }
+        if (entity.entityData.Actor == EntityActor.player)
+            Debug.Log("GetHit");
+
+        if (entity.animator != null)
+            entity.animator.SetTrigger("GetHit");
     }
 
     void Die()
     {
-        entity.animator.ifJust(a => a.SetTrigger("Die"));
+        isAlive = false;
+
+        if (entity.entityData.Actor == EntityActor.player)
+            Debug.Log("Death");
+
+        if (entity.animator != null)
+            entity.animator.Play("Death", 0);
+
         EntityController.singleton.Remove(entity);
-        Destroy(gameObject, 2f);
+        Destroy(gameObject, 10f);
     }
 }

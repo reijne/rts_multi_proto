@@ -14,7 +14,8 @@ public class EnemyController : MonoBehaviour
         Moving movingEntity = entity.GetComponent<Moving>();
         if (movingEntity != null)
         {
-            movingEntity.MoveTo(new Vector3(0, 0, 0));
+            // TODO: Figure out spawning of enemies and where they should go.
+            // movingEntity.MoveTo(new Vector3(0, 0, 0));
         }
     }
 

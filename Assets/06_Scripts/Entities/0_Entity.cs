@@ -4,7 +4,7 @@ using UnityEngine;
 public class Entity : MonoBehaviour
 {
     public EntityData entityData;
-    public Maybe<Animator> animator;
+    public Animator animator;
 
     public event Action OnSelected;
     public event Action OnDeselected;
@@ -25,7 +25,7 @@ public class Entity : MonoBehaviour
             EnemyController.singleton.Add(this);
         }
         selectCollider = GetComponent<Collider>();
-        animator = Maybe<Animator>.fromNullable(GetComponent<Animator>());
+        animator = GetComponent<Animator>();
     }
 
     /// <summary>
@@ -92,7 +92,7 @@ public class Entity : MonoBehaviour
     public void Select()
     {
         isSelected = true;
-        GetComponentInChildren<Renderer>().material.color = Color.green;
+        GetComponentInChildren<Renderer>().material.color = Color.gray;
         OnSelected?.Invoke();
     }
 

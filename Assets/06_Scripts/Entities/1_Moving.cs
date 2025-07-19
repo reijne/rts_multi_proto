@@ -4,16 +4,15 @@ public class Moving : MonoBehaviour
 {
     public MovingData movingData;
     private Entity entity;
+    private Health health;
 
-    Vector3? moveTarget;
-    Maybe<Transform> transformTarget;
-    Vector3? target =>
-        moveTarget
-        ?? transformTarget.caseOf<Vector3?>(t => t.position, () => null);
+    Vector3? desiredLocation;
+    Transform movingTarget;
 
     void Start()
     {
         entity = GetComponent<Entity>();
+        health = entity.GetComponent<Health>();
     }
 
     public void MoveTo(Vector3 destination)
@@ -24,37 +23,73 @@ public class Moving : MonoBehaviour
             destination.z
         );
         transform.LookAt(newTarget);
-        moveTarget = newTarget;
+        desiredLocation = newTarget;
     }
 
+    // Set a target transform to move towards, essentially following that transform.
+    // Manual MoveTo a set location takes precedence over this target.
     public void MoveTo(Transform target)
     {
-        transformTarget = Maybe<Transform>.of(target);
+        movingTarget = target;
     }
 
     void Update()
     {
-        step();
+        if (health != null && !health.IsAlive)
+            return;
+
+        move();
     }
 
-    void step()
+    void move()
     {
-        if (target == null)
+        if (desiredLocation.HasValue)
         {
-            SetMoving(false);
+            move(desiredLocation.Value);
             return;
         }
 
-        float distance = Vector3.Distance(transform.position, moveTarget.Value);
+        if (movingTarget != null)
+        {
+            move(movingTarget);
+        }
 
-        if (distance <= movingData.CloseEnoughDistance)
+        SetMoving(false);
+    }
+
+    bool closeEnough(Vector3 location) =>
+        Vector3.Distance(transform.position, location)
+        <= movingData.CloseEnoughDistance;
+
+    void move(Vector3 location)
+    {
+        if (closeEnough(location))
         {
             SetMoving(false);
+            desiredLocation = null;
             return;
         }
 
+        stepTo(location);
+    }
+
+    void move(Transform target)
+    {
+        if (closeEnough(target.position))
+        {
+            SetMoving(false);
+            movingTarget = null;
+            return;
+        }
+
+        transform.LookAt(movingTarget);
+        stepTo(movingTarget.position);
+    }
+
+    void stepTo(Vector3 location)
+    {
         SetMoving(true);
-        Vector3 direction = (moveTarget.Value - transform.position).normalized;
+        Vector3 direction = (location - transform.position).normalized;
         transform.position +=
             direction * movingData.MovementSpeed * Time.deltaTime;
     }
@@ -62,6 +97,7 @@ public class Moving : MonoBehaviour
     // Set the animator `isMoving` param, enabling the Run animation.
     void SetMoving(bool moving)
     {
-        entity.animator.ifJust(a => a.SetBool("isMoving", moving));
+        if (entity.animator != null)
+            entity.animator.SetBool("isMoving", moving);
     }
 }

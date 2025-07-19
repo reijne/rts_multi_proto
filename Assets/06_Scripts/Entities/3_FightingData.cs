@@ -1,3 +1,4 @@
+using System;
 using UnityEngine;
 
 [CreateAssetMenu(
@@ -7,10 +8,27 @@ using UnityEngine;
 public class FightingData : ScriptableObject
 {
     [SerializeField]
-    private float damage = 25f;
+    private Ranges ranges = new Ranges(1.5f, 10f);
+    public Ranges Ranges => ranges;
+
+    [SerializeField]
+    private float damage = 10f;
     public float Damage => damage;
 
     [SerializeField]
-    private float range = 5f;
-    public float Range => range;
+    private float cooldown = 1f;
+    public float Cooldown => cooldown;
+}
+
+[Serializable]
+public struct Ranges
+{
+    public float attack;
+    public float vision;
+
+    public Ranges(float attack, float vision)
+    {
+        this.attack = attack;
+        this.vision = vision;
+    }
 }
