@@ -7,8 +7,8 @@ public class Moving : MonoBehaviour
 
     Vector3? desiredLocation;
     Transform movingTarget;
-    float blockedTime = 0f;
-    const float maxBlockedTime = 1.5f; // seconds
+
+    Vector3 position => transform.position;
 
     // TODO: Add this back in if the position calculation becomes too
     // heavy to check each update for grid position.
@@ -17,24 +17,15 @@ public class Moving : MonoBehaviour
     void Start()
     {
         entity = GetComponent<Entity>();
-        // gridPosition = GridPlane.singleton.WorldToCell(transform.position);
+        // gridPosition = GridPlane.singleton.WorldToCell(position);
     }
 
     public void MoveTo(Vector3 desired)
     {
-        // Vector3 newTarget = new Vector3(
-        //     destination.x,
-        //     transform.position.y,
-        //     destination.z
-        // );
-        Vector3 destination = GridPlane.singleton.MoveTo(
-            transform.position,
-            desired
-        );
+        Vector3 destination = GridPlane.singleton.MoveTo(position, desired);
         destination.y = 0f;
         transform.LookAt(destination);
         desiredLocation = destination;
-        blockedTime = 0f;
     }
 
     // Set a target transform to move towards, essentially following that transform.
@@ -68,8 +59,7 @@ public class Moving : MonoBehaviour
     }
 
     bool closeEnough(Vector3 location) =>
-        Vector3.Distance(transform.position, location)
-        <= movingData.CloseEnoughDistance;
+        Vector3.Distance(position, location) <= movingData.CloseEnoughDistance;
 
     void move(Vector3 location)
     {
@@ -80,17 +70,8 @@ public class Moving : MonoBehaviour
             return;
         }
 
+        // If we can no longer move towards the desired location, give up.
         if (!tryStepTo(location))
-        {
-            blockedTime += Time.deltaTime;
-        }
-        else
-        {
-            blockedTime = 0f;
-        }
-
-        // TODO: Set the maximum time to be blocked from moving into movingData?
-        if (blockedTime >= maxBlockedTime)
             desiredLocation = null;
     }
 
@@ -104,26 +85,28 @@ public class Moving : MonoBehaviour
         }
 
         transform.LookAt(movingTarget);
-        tryStepTo(movingTarget.position);
+
+        // If we can no longer move to the target, give up.
+        if (!tryStepTo(movingTarget.position))
+            movingTarget = null;
     }
 
     bool tryStepTo(Vector3 location)
     {
-        Vector3 direction = (location - transform.position).normalized;
+        Vector3 direction = (location - position).normalized;
         Vector3 newPosition =
-            transform.position
-            + direction * movingData.MovementSpeed * Time.deltaTime;
+            position + direction * movingData.MovementSpeed * Time.deltaTime;
 
-        bool hasMoved = GridPlane.singleton.TryMove(
-            transform.position,
-            newPosition
-        );
-        SetMoving(hasMoved);
+        bool canMove =
+            GridPlane.singleton.Equals(position, newPosition)
+            || GridPlane.singleton.IsFree(newPosition);
 
-        if (hasMoved)
+        SetMoving(canMove);
+
+        if (canMove)
             transform.position = newPosition;
 
-        return hasMoved;
+        return canMove;
     }
 
     // Set the animator `isMoving` param, enabling the Run animation.
@@ -131,5 +114,10 @@ public class Moving : MonoBehaviour
     {
         if (entity.animator != null)
             entity.animator.SetBool("isMoving", moving);
+
+        if (moving) // We are leaving, free our position.
+            GridPlane.singleton.Free(position);
+        else // We have stopped moving, time to occupy.
+            GridPlane.singleton.Occupy(position, Cell.Unit);
     }
 }

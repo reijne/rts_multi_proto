@@ -40,29 +40,28 @@ public class GridPlane : MonoBehaviour
     private Vector3 cellToWorld(Vector3Int cell) =>
         grid.GetCellCenterWorld(cell);
 
+    private bool equals(Vector3 a, Vector3 b) =>
+        worldToCell(a) == worldToCell(b);
+
+    public bool Equals(Vector3 a, Vector3 b) => equals(a, b);
+
+    // Functions to check the state of a cell.
     private bool isOccupied(Vector3Int cell) => cells.ContainsKey(cell);
+
+    public bool IsOccupied(Vector3 world) => isOccupied(worldToCell(world));
 
     private bool isFree(Vector3Int cell) => !isOccupied(cell);
 
+    public bool IsFree(Vector3 world) => isFree(worldToCell(world));
+
+    // Functions to free or occupy a cell.
     private void free(Vector3Int cell) => cells.Remove(cell);
+
+    public void Free(Vector3 world) => free(worldToCell(world));
 
     private void occupy(Vector3Int cell, Cell type) => cells[cell] = type;
 
-    public bool TryMove(Vector3 current, Vector3 desired)
-    {
-        Vector3Int currentCell = worldToCell(current);
-        Vector3Int desiredCell = worldToCell(desired);
-
-        if (currentCell == desiredCell)
-            return true;
-
-        if (isOccupied(desiredCell))
-            return false;
-
-        free(currentCell);
-        occupy(desiredCell, Cell.Unit);
-        return true;
-    }
+    public void Occupy(Vector3 world, Cell c) => occupy(worldToCell(world), c);
 
     private Vector3Int? getClosestAvailable(Vector3 current, Vector3 desired)
     {
