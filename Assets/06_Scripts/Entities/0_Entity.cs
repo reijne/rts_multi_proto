@@ -6,13 +6,17 @@ public class Entity : MonoBehaviour
     public EntityData entityData;
     public Animator animator;
 
+    // Selection
     public event Action OnSelected;
     public event Action OnDeselected;
     private bool isSelected = false;
-
     public bool IsSelected => isSelected;
+    private Collider selectCollider;
 
-    Collider selectCollider;
+    // Possible health of this entity, does *not* need to exist,
+    private Health health;
+
+    public bool Enabled => health != null && health.IsAlive;
 
     void Start()
     {
@@ -26,6 +30,9 @@ public class Entity : MonoBehaviour
         }
         selectCollider = GetComponent<Collider>();
         animator = GetComponent<Animator>();
+
+        // Warning: Does *not* need to exist for an Entity.
+        health = GetComponent<Health>();
     }
 
     /// <summary>

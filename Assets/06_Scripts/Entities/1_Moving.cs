@@ -4,7 +4,6 @@ public class Moving : MonoBehaviour
 {
     public MovingData movingData;
     private Entity entity;
-    private Health health;
 
     Vector3? desiredLocation;
     Transform movingTarget;
@@ -12,7 +11,6 @@ public class Moving : MonoBehaviour
     void Start()
     {
         entity = GetComponent<Entity>();
-        health = entity.GetComponent<Health>();
     }
 
     public void MoveTo(Vector3 destination)
@@ -35,7 +33,7 @@ public class Moving : MonoBehaviour
 
     void Update()
     {
-        if (health != null && !health.IsAlive)
+        if (!entity.Enabled)
             return;
 
         move();

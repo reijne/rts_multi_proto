@@ -5,7 +5,6 @@ public class Fighting : MonoBehaviour
     public FightingData fightingData;
     private Entity entity;
     private Moving moving;
-    private Health health;
     private float lastAttackTime = Mathf.NegativeInfinity;
     private Health currentTargetEnemy;
 
@@ -15,7 +14,6 @@ public class Fighting : MonoBehaviour
 
         // Possible attributes.
         moving = GetComponent<Moving>();
-        health = GetComponent<Health>();
     }
 
     void OnDrawGizmos()
@@ -31,7 +29,7 @@ public class Fighting : MonoBehaviour
 
     void Update()
     {
-        if (health != null && !health.IsAlive)
+        if (!entity.Enabled)
             return;
 
         updateClosestEnemy();
