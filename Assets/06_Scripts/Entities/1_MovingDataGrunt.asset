@@ -13,4 +13,4 @@ MonoBehaviour:
   m_Name: 1_MovingDataGrunt
   m_EditorClassIdentifier: 
   movementSpeed: 5
-  closeEnoughDistance: 1
+  closeEnoughDistance: 0.1

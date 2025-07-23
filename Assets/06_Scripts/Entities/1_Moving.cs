@@ -7,21 +7,34 @@ public class Moving : MonoBehaviour
 
     Vector3? desiredLocation;
     Transform movingTarget;
+    float blockedTime = 0f;
+    const float maxBlockedTime = 1.5f; // seconds
+
+    // TODO: Add this back in if the position calculation becomes too
+    // heavy to check each update for grid position.
+    // Vector3Int gridPosition;
 
     void Start()
     {
         entity = GetComponent<Entity>();
+        // gridPosition = GridPlane.singleton.WorldToCell(transform.position);
     }
 
-    public void MoveTo(Vector3 destination)
+    public void MoveTo(Vector3 desired)
     {
-        Vector3 newTarget = new Vector3(
-            destination.x,
-            transform.position.y,
-            destination.z
+        // Vector3 newTarget = new Vector3(
+        //     destination.x,
+        //     transform.position.y,
+        //     destination.z
+        // );
+        Vector3 destination = GridPlane.singleton.MoveTo(
+            transform.position,
+            desired
         );
-        transform.LookAt(newTarget);
-        desiredLocation = newTarget;
+        destination.y = 0f;
+        transform.LookAt(destination);
+        desiredLocation = destination;
+        blockedTime = 0f;
     }
 
     // Set a target transform to move towards, essentially following that transform.
@@ -50,9 +63,8 @@ public class Moving : MonoBehaviour
         if (movingTarget != null)
         {
             move(movingTarget);
+            return;
         }
-
-        SetMoving(false);
     }
 
     bool closeEnough(Vector3 location) =>
@@ -68,7 +80,18 @@ public class Moving : MonoBehaviour
             return;
         }
 
-        stepTo(location);
+        if (!tryStepTo(location))
+        {
+            blockedTime += Time.deltaTime;
+        }
+        else
+        {
+            blockedTime = 0f;
+        }
+
+        // TODO: Set the maximum time to be blocked from moving into movingData?
+        if (blockedTime >= maxBlockedTime)
+            desiredLocation = null;
     }
 
     void move(Transform target)
@@ -81,15 +104,26 @@ public class Moving : MonoBehaviour
         }
 
         transform.LookAt(movingTarget);
-        stepTo(movingTarget.position);
+        tryStepTo(movingTarget.position);
     }
 
-    void stepTo(Vector3 location)
+    bool tryStepTo(Vector3 location)
     {
-        SetMoving(true);
         Vector3 direction = (location - transform.position).normalized;
-        transform.position +=
-            direction * movingData.MovementSpeed * Time.deltaTime;
+        Vector3 newPosition =
+            transform.position
+            + direction * movingData.MovementSpeed * Time.deltaTime;
+
+        bool hasMoved = GridPlane.singleton.TryMove(
+            transform.position,
+            newPosition
+        );
+        SetMoving(hasMoved);
+
+        if (hasMoved)
+            transform.position = newPosition;
+
+        return hasMoved;
     }
 
     // Set the animator `isMoving` param, enabling the Run animation.

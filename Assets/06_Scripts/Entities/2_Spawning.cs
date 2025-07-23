@@ -1,5 +1,6 @@
 using System;
 using UnityEngine;
+using UnityEngine.InputSystem;
 
 public class Spawning : MonoBehaviour
 {
@@ -55,15 +56,27 @@ public class Spawning : MonoBehaviour
 
     void handleKeyboard()
     {
+        if (!entity.Enabled || !entity.IsSelected)
+            return;
+
         if (
-            entity.IsSelected
-            && Input.GetKeyDown(KeyCode.Space)
+            Input.GetKeyDown(KeyCode.Q)
+            && Input.GetKey(KeyCode.LeftShift)
+            && ResourceController.singleton.TrySpendEnergy(
+                spawningEntityData.UnitCost * 5
+            )
+        )
+        {
+            AddUnitToQueue(5);
+        }
+        else if (
+            Input.GetKeyDown(KeyCode.Q)
             && ResourceController.singleton.TrySpendEnergy(
                 spawningEntityData.UnitCost
             )
         )
         {
-            AddUnitToQueue();
+            AddUnitToQueue(1);
         }
     }
 
@@ -90,7 +103,7 @@ public class Spawning : MonoBehaviour
         // Build the offset: only use X and Z, match Y with current position
         Vector3 spawnOffset = new Vector3(
             direction.x * halfExtents.x,
-            0f,
+            10f,
             direction.z * halfExtents.z
         );
 
@@ -114,9 +127,9 @@ public class Spawning : MonoBehaviour
         spawnPosition = pos;
     }
 
-    public void AddUnitToQueue()
+    public void AddUnitToQueue(int amount)
     {
-        UnitQueue += 1;
-        ResourceController.singleton.IncrementGlobalQueue();
+        UnitQueue += amount;
+        ResourceController.singleton.IncrementGlobalQueue(amount);
     }
 }

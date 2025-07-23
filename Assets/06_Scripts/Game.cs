@@ -34,9 +34,9 @@ public class Game : MonoBehaviour
             Destroy(gameObject);
             return;
         }
-
         singleton = this;
         DontDestroyOnLoad(gameObject);
+
         start = DateTime.Now;
         maximumRuntime = new TimeSpan(
             hours: 0,

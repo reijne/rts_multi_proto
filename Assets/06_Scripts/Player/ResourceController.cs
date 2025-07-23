@@ -50,19 +50,19 @@ public class ResourceController : MonoBehaviour
         resourceText.text = Energy.ToString();
     }
 
-    public void IncrementGlobalQueue()
+    public void IncrementGlobalQueue(int amount)
     {
-        GlobalQueue += 1;
-        UpdateGlobalQueueTest();
+        GlobalQueue += amount;
+        UpdateGlobalQueueText();
     }
 
     public void DecrementGlobalQueue()
     {
         GlobalQueue -= 1;
-        UpdateGlobalQueueTest();
+        UpdateGlobalQueueText();
     }
 
-    void UpdateGlobalQueueTest()
+    void UpdateGlobalQueueText()
     {
         globalQueueText.text = GlobalQueue.ToString();
     }

@@ -16,7 +16,7 @@ public class Entity : MonoBehaviour
     // Possible health of this entity, does *not* need to exist,
     private Health health;
 
-    public bool Enabled => health != null && health.IsAlive;
+    public bool Enabled => health == null || health.IsAlive;
 
     void Start()
     {
