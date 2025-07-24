@@ -39,21 +39,22 @@ public class GridPlane : MonoBehaviour
         singleton = this;
         DontDestroyOnLoad(gameObject);
 
-        float scaleX = transform.localScale.x * 10 / grid.cellSize.x;
-        float scaleY = transform.localScale.z * 10 / grid.cellSize.z;
+        int sizeX = Mathf.RoundToInt(
+            transform.localScale.x * 10 / grid.cellSize.x
+        );
+        int sizeY = Mathf.RoundToInt(
+            transform.localScale.z * 10 / grid.cellSize.z
+        );
 
         // Center the grid on this plane.
-        Vector3 offset = new Vector3(scaleX / 2, 0, scaleY / 2);
+        Vector3Int offset = new Vector3Int(sizeX / 2, 0, sizeY / 2);
         grid.gameObject.transform.position -= offset;
         gameObject.transform.position += offset;
 
-        gridSize = new Vector2Int(
-            Mathf.RoundToInt(scaleX),
-            Mathf.RoundToInt(scaleY)
-        );
+        gridSize = new Vector2Int(sizeX, sizeY);
 
         material = GetComponent<MeshRenderer>().material;
-        material.mainTextureScale = new Vector2(scaleX, scaleY);
+        material.mainTextureScale = new Vector2(sizeX, sizeY);
     }
 
     void Start()
@@ -219,17 +220,16 @@ public class GridPlane : MonoBehaviour
     void Update()
     {
         if (Input.GetKeyDown(KeyCode.F))
+        {
             showFlowField = !showFlowField;
+            // flowField?.DebugDrawGrid();
+        }
+        if (showFlowField)
+            flowField?.DebugDrawGrid();
         // foreach (Vector3Int cellPos in cells.Keys)
         // {
         //     DebugHighlightCellBox(cellPos, Color.green);
         // }
-    }
-
-    void OnDrawGizmos()
-    {
-        if (showFlowField)
-            flowField?.DebugDrawGrid();
     }
 
     // Draw the outline of a cell using Debug.DrawLine, only in Editor.

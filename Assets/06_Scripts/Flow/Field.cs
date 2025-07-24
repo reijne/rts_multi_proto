@@ -61,11 +61,12 @@ static class Direction
 // A single occupiable space in the Grid, used for FlowField path finding.
 class Cell
 {
-    public readonly Vector3Int GridPosition;
-
     // World position, center of the grid position.
-    // Stored for efficiency, equivalent of grid.center(gridPosition).
+    // Stored for efficiency, equivalent of grid.center(Vector3Int(x, 0, z)).
     public readonly Vector3 WorldPosition;
+
+    public readonly int x;
+    public readonly int z;
 
     private readonly byte cost;
 
@@ -79,9 +80,10 @@ class Cell
     public Vector3 BestDirection;
 
     // Construct with a possible cost, to allow initialization with some occupancy.
-    public Cell(Vector3Int gridPosition, Vector3 worldPosition, byte? cost)
+    public Cell(int x, int z, Vector3 worldPosition, byte? cost)
     {
-        GridPosition = gridPosition;
+        this.x = x;
+        this.z = z;
         WorldPosition = worldPosition;
         this.cost = cost ?? 1;
         Cost = this.cost;
@@ -114,41 +116,60 @@ public class FlowField
     bool shouldResetBeforeCreate = false;
 
     // The entire collection of cells, based on the grid position.
-    Dictionary<Vector3Int, Cell> gridCells = new Dictionary<Vector3Int, Cell>();
+    Cell[,] gridCells;
+    int width;
+    int height;
+
+    Material debugMaterial;
+    Mesh cubeMesh;
 
     // TODO: Add a constructor that allows initial occupancy of cells,
     // with costs per grid position.
-    public FlowField(Grid grid, Vector2 size)
+    public FlowField(Grid grid, Vector2Int size)
     {
         this.grid = grid;
+        width = size.x;
+        height = size.y;
 
+        gridCells = new Cell[size.x, size.y];
         for (int x = 0; x < size.x; x++)
         {
             for (int z = 0; z < size.y; z++)
             {
-                Vector3Int gridPosition = new Vector3Int(x, 0, z);
-                gridCells[gridPosition] = new Cell(
-                    // TODO: Why do we need the gridPosition in the cell?
-                    gridPosition,
-                    grid.GetCellCenterWorld(gridPosition),
+                gridCells[x, z] = new Cell(
+                    x,
+                    z,
+                    grid.GetCellCenterWorld(new Vector3Int(x, 0, z)),
                     null
                 );
             }
         }
     }
 
+    bool InBounds(int x, int z) => x >= 0 && z >= 0 && x < width && z < height;
+
+    void forEachCell(System.Action<Cell> action)
+    {
+        for (int x = 0; x < width; x++)
+        {
+            for (int z = 0; z < height; z++)
+            {
+                action(gridCells[x, z]);
+            }
+        }
+    }
+
     void reset()
     {
-        foreach (Cell cell in gridCells.Values)
-        {
-            cell.Reset();
-        }
+        for (int x = 0; x < width; x++)
+        for (int z = 0; z < height; z++)
+            gridCells[x, z].Reset();
     }
 
     // Populate the cells with best costs, based on a destination.
     void createIntegrationField(Vector3Int destination)
     {
-        Cell destinationCell = gridCells[destination];
+        Cell destinationCell = gridCells[destination.x, destination.z];
         destinationCell.Cost = 0;
         destinationCell.BestCost = 0;
 
@@ -159,14 +180,14 @@ public class FlowField
             Cell current = cellsToCheck.Dequeue();
             for (int n = 0; n < 4; n++)
             {
-                Cell neighbor;
-                if (
-                    !gridCells.TryGetValue(
-                        current.GridPosition + Direction.Cardinals[n],
-                        out neighbor
-                    )
-                    || neighbor.Cost == byte.MaxValue
-                ) // This cell is not traversable.
+                int nx = current.x + Direction.Cardinals[n].x;
+                int nz = current.z + Direction.Cardinals[n].z;
+
+                if (!InBounds(nx, nz))
+                    continue;
+
+                Cell neighbor = gridCells[nx, nz];
+                if (neighbor.Cost == byte.MaxValue) // This cell is not traversable.
                     continue;
 
                 // Neighbors best cost is either the one that already exists, or
@@ -189,33 +210,30 @@ public class FlowField
         // Populate all the bestCosts, so we can determine bestDirection from those.
         createIntegrationField(destination);
 
-        foreach (Cell cell in gridCells.Values)
+        forEachCell(current =>
         {
-            ushort bestCost = cell.BestCost;
+            ushort bestCost = current.BestCost;
 
             for (int n = 0; n < 8; n++)
             {
                 Vector3Int direction = Direction.CardinalPlus[n];
-                Cell neighbor;
-                if (
-                    !gridCells.TryGetValue(
-                        cell.GridPosition + direction,
-                        out neighbor
-                    )
-                )
-                {
+                int nx = current.x + direction.x;
+                int nz = current.z + direction.z;
+
+                if (!InBounds(nx, nz))
                     continue;
-                }
+
+                Cell neighbor = gridCells[nx, nz];
 
                 // If the neighbor is closer to the destination, update our new
                 // found best cost, and set the direction to it.
                 if (neighbor.BestCost < bestCost)
                 {
                     bestCost = neighbor.BestCost;
-                    cell.BestDirection = direction;
+                    current.BestDirection = direction;
                 }
             }
-        }
+        });
 
         shouldResetBeforeCreate = true;
     }
@@ -227,33 +245,94 @@ public class FlowField
         Debug.Log("FlowField.Create, done");
     }
 
-    public Vector3 GetDirection(Vector3 current)
+    // TODO: Update this to only be used when necessary, worldToCell should be
+    // avoided on critical paths, only if the gridPosition changes should we
+    // get the direction.
+    public Vector3 GetDirection(Vector3 currentLocation)
     {
-        return gridCells[grid.WorldToCell(current)].BestDirection;
+        Vector3Int gridPosition = grid.WorldToCell(currentLocation);
+        return gridCells[gridPosition.x, gridPosition.z].BestDirection;
     }
 
-    // Draw the grid, with color based on the best cost.
+    void InitDebugResources()
+    {
+        if (debugMaterial == null)
+        {
+            debugMaterial = new Material(
+                Shader.Find("Custom/UnlitInstanceColor")
+            );
+            debugMaterial.enableInstancing = true;
+        }
+
+        if (cubeMesh == null)
+            cubeMesh = Resources.GetBuiltinResource<Mesh>("Cube.fbx");
+    }
+
     public void DebugDrawGrid()
     {
-        // Normalize the max color based on the max cost.
+        InitDebugResources();
+
+        // 1. Find max cost for normalization
         ushort maxCost = 0;
-        foreach (var cell in gridCells.Values)
+        forEachCell(cell =>
+        {
             if (cell.BestCost != ushort.MaxValue)
                 maxCost = (ushort)Mathf.Max(maxCost, cell.BestCost);
+        });
 
-        foreach (Cell cell in gridCells.Values)
+        // 2. Prepare lists for batching
+        List<Matrix4x4> matrices = new List<Matrix4x4>();
+        List<Vector4> colors = new List<Vector4>();
+
+        forEachCell(cell =>
         {
             float normalized =
                 (cell.BestCost == ushort.MaxValue)
                     ? 1f
                     : (cell.BestCost / (float)maxCost);
 
-            // Map normalized [0,1] → HSV hue range [0,1] (0 = red, 1 = back to red)
-            // Use full saturation and brightness for vivid rainbow.
             Color rainbow = Color.HSVToRGB(1f - normalized, 1f, 1f);
+            // Green at destination → Red at farthest
+            Color gradient = Color.Lerp(Color.green, Color.red, normalized);
 
-            Gizmos.color = rainbow;
-            Gizmos.DrawCube(cell.WorldPosition, grid.cellSize);
-        }
+            matrices.Add(
+                Matrix4x4.TRS(
+                    cell.WorldPosition,
+                    Quaternion.identity,
+                    grid.cellSize * 0.95f
+                )
+            );
+            colors.Add(gradient);
+
+            // 3. Draw in batches of 1023
+            if (matrices.Count == 1023)
+            {
+                DrawBatch(matrices, colors);
+                matrices.Clear();
+                colors.Clear();
+            }
+        });
+
+        if (matrices.Count > 0)
+            DrawBatch(matrices, colors);
+    }
+
+    void DrawBatch(List<Matrix4x4> matrices, List<Vector4> colors)
+    {
+        var props = new MaterialPropertyBlock();
+        props.SetVectorArray("_Color", colors);
+        Graphics.DrawMeshInstanced(
+            cubeMesh,
+            0,
+            debugMaterial,
+            matrices,
+            props,
+            UnityEngine.Rendering.ShadowCastingMode.Off,
+            false,
+            0,
+            null,
+            UnityEngine.Rendering.LightProbeUsage.Off,
+            null
+        );
     }
 }
