@@ -121,6 +121,6 @@ public class Moving : MonoBehaviour
         if (moving) // We are leaving, free our position.
             GridPlane.singleton.Free(position);
         else // We have stopped moving, time to occupy.
-            GridPlane.singleton.Occupy(position, Cell.Unit, entity);
+            GridPlane.singleton.Occupy(position, CellType.Unit, entity);
     }
 }

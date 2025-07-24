@@ -38,9 +38,6 @@ public class Health : MonoBehaviour
             Die();
             return;
         }
-        if (entity.entityData.Actor == EntityActor.player)
-            Debug.Log("GetHit");
-
         if (entity.animator != null)
             entity.animator.SetTrigger("GetHit");
     }
@@ -48,9 +45,6 @@ public class Health : MonoBehaviour
     void Die()
     {
         isAlive = false;
-
-        if (entity.entityData.Actor == EntityActor.player)
-            Debug.Log("Death");
 
         if (entity.animator != null)
             entity.animator.Play("Death", 0);

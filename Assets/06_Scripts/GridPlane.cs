@@ -3,7 +3,7 @@ using System.Collections.Generic;
 using System.Linq;
 using UnityEngine;
 
-public enum Cell
+public enum CellType
 {
     Unit,
     EnemyUnit,
@@ -12,6 +12,18 @@ public enum Cell
     Terrain,
 }
 
+// private struct CostField
+// {
+
+// }
+
+// private struct IntegrationField
+// {
+
+// }
+
+// private struct
+
 public class GridPlane : MonoBehaviour
 {
     public static GridPlane singleton { get; private set; }
@@ -19,8 +31,8 @@ public class GridPlane : MonoBehaviour
     private Material material;
 
     // Entities tracked by world cell position
-    private Dictionary<Vector3Int, Tuple<Cell, Entity>> cells =
-        new Dictionary<Vector3Int, Tuple<Cell, Entity>>();
+    private Dictionary<Vector3Int, Tuple<CellType, Entity>> cells =
+        new Dictionary<Vector3Int, Tuple<CellType, Entity>>();
 
     void Awake()
     {
@@ -63,10 +75,10 @@ public class GridPlane : MonoBehaviour
 
     public void Free(Vector3 world) => free(worldToCell(world));
 
-    private void occupy(Vector3Int cell, Cell type, Entity ent) =>
-        cells[cell] = new Tuple<Cell, Entity>(type, ent);
+    private void occupy(Vector3Int cell, CellType type, Entity ent) =>
+        cells[cell] = new Tuple<CellType, Entity>(type, ent);
 
-    public void Occupy(Vector3 world, Cell c, Entity ent) =>
+    public void Occupy(Vector3 world, CellType c, Entity ent) =>
         occupy(worldToCell(world), c, ent);
 
     private Vector3Int? getClosestAvailable(
@@ -143,18 +155,14 @@ public class GridPlane : MonoBehaviour
         return current;
     }
 
-    private List<Tuple<Cell, Entity>> getCellsInRange(
+    private List<Tuple<CellType, Entity>> getCellsInRange(
         Vector3Int center,
         int visionRadius,
-        Cell filter
+        CellType filter
     )
     {
-        Debug.Log(
-            "getCellsInRange current keys: "
-                + string.Join(", ", cells.Keys.Select(k => k.ToString()))
-        );
-        Debug.Log("gridPlane position.y" + (int)transform.position.y);
-        List<Tuple<Cell, Entity>> inRange = new List<Tuple<Cell, Entity>>();
+        List<Tuple<CellType, Entity>> inRange =
+            new List<Tuple<CellType, Entity>>();
         for (int x = -visionRadius; x <= visionRadius; x++)
         {
             for (int z = -visionRadius; z <= visionRadius; z++)
@@ -173,32 +181,32 @@ public class GridPlane : MonoBehaviour
         return inRange;
     }
 
-    public List<Tuple<Cell, Entity>> GetCellsInRange(
+    public List<Tuple<CellType, Entity>> GetCellsInRange(
         Vector3 position,
         int vision,
-        Cell filter
+        CellType filter
     )
     {
         return getCellsInRange(worldToCell(position), vision, filter);
     }
 
     // DEBUG clicking.
-    void OnMouseDown()
-    {
-        Game.singleton.GetHit()
-            .ifJust(hit =>
-            {
-                Vector3Int cell = grid.WorldToCell(hit);
-                DebugHighlightCellBox(cell, Color.white);
-            });
-    }
+    // void OnMouseDown()
+    // {
+    //     Game.singleton.GetHit()
+    //         .ifJust(hit =>
+    //         {
+    //             Vector3Int cell = grid.WorldToCell(hit);
+    //             DebugHighlightCellBox(cell, Color.white);
+    //         });
+    // }
 
     void Update()
     {
-        foreach (Vector3Int cellPos in cells.Keys)
-        {
-            DebugHighlightCellBox(cellPos, Color.green);
-        }
+        // foreach (Vector3Int cellPos in cells.Keys)
+        // {
+        //     DebugHighlightCellBox(cellPos, Color.green);
+        // }
     }
 
     // Draw the outline of a cell using Debug.DrawLine, only in Editor.

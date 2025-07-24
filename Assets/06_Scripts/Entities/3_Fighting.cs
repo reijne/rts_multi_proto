@@ -9,7 +9,7 @@ public class Fighting : MonoBehaviour
     private Moving moving;
     private float lastAttackTime = Mathf.NegativeInfinity;
     private Health currentTargetEnemy;
-    private Cell targetFilter;
+    private CellType targetFilter;
 
     void Start()
     {
@@ -17,9 +17,9 @@ public class Fighting : MonoBehaviour
 
         // TODO: Expand for buildings as well.
         if (entity.entityData.Actor == EntityActor.player)
-            targetFilter = Cell.EnemyUnit;
+            targetFilter = CellType.EnemyUnit;
         else
-            targetFilter = Cell.Unit;
+            targetFilter = CellType.Unit;
 
         // Possible attributes.
         moving = GetComponent<Moving>();
@@ -74,17 +74,12 @@ public class Fighting : MonoBehaviour
 
     Health getClosetEnemyInSight()
     {
-        List<Tuple<Cell, Entity>> inRange = GridPlane.singleton.GetCellsInRange(
-            transform.position,
-            fightingData.Ranges.vision,
-            targetFilter
-        );
-        Debug.Log(
-            "getClosetEnemyInSight filter"
-                + targetFilter
-                + "inRange:"
-                + inRange.Count
-        );
+        List<Tuple<CellType, Entity>> inRange =
+            GridPlane.singleton.GetCellsInRange(
+                transform.position,
+                fightingData.Ranges.vision,
+                targetFilter
+            );
 
         Health closestEnemy = null;
         float closestDistance = float.PositiveInfinity;
@@ -102,7 +97,6 @@ public class Fighting : MonoBehaviour
             }
         }
 
-        Debug.Log("ClosestEnemyInSight returning: " + closestEnemy);
         return closestEnemy;
     }
 
@@ -126,9 +120,6 @@ public class Fighting : MonoBehaviour
         transform.LookAt(currentTargetEnemy.transform);
         currentTargetEnemy.GetHit(fightingData.Damage);
         lastAttackTime = Time.time;
-
-        if (entity.entityData.Actor == EntityActor.player)
-            Debug.Log("Attack");
 
         if (entity.animator != null)
             entity.animator.SetTrigger("Attack");
