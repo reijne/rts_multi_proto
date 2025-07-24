@@ -10,21 +10,21 @@ public enum FlowFieldDisplayType
     IntegrationField,
 };
 
-public class GridDebug : MonoBehaviour
+public class TutorialGridDebug : MonoBehaviour
 {
-    public GridController gridController;
+    public TutorialGridController gridController;
     public bool displayGrid;
 
     public FlowFieldDisplayType curDisplayType;
 
     private Vector2Int gridSize;
     private float cellRadius;
-    private FlowField curFlowField;
+    private TutorialFlowField curFlowField;
 
     public Sprite arrow;
     public Sprite home;
 
-    public void SetFlowField(FlowField newFlowField)
+    public void SetFlowField(TutorialFlowField newFlowField)
     {
         curFlowField = newFlowField;
         cellRadius = newFlowField.cellRadius;
@@ -56,7 +56,7 @@ public class GridDebug : MonoBehaviour
         {
             return;
         }
-        foreach (Cell curCell in curFlowField.grid)
+        foreach (TutorialCell curCell in curFlowField.grid)
         {
             DisplayCell(curCell);
         }
@@ -71,7 +71,7 @@ public class GridDebug : MonoBehaviour
         DisplayCell(curFlowField.destinationCell);
     }
 
-    private void DisplayCell(Cell cell)
+    private void DisplayCell(TutorialCell cell)
     {
         GameObject iconGO = new GameObject();
         SpriteRenderer iconSR = iconGO.AddComponent<SpriteRenderer>();
@@ -90,49 +90,49 @@ public class GridDebug : MonoBehaviour
             Quaternion newRot = Quaternion.Euler(90, 0, 0);
             iconGO.transform.rotation = newRot;
         }
-        else if (cell.bestDirection == GridDirection.North)
+        else if (cell.bestDirection == TutorialGridDirection.North)
         {
             iconSR.sprite = arrow;
             Quaternion newRot = Quaternion.Euler(90, 0, 0);
             iconGO.transform.rotation = newRot;
         }
-        else if (cell.bestDirection == GridDirection.South)
+        else if (cell.bestDirection == TutorialGridDirection.South)
         {
             iconSR.sprite = arrow;
             Quaternion newRot = Quaternion.Euler(90, 180, 0);
             iconGO.transform.rotation = newRot;
         }
-        else if (cell.bestDirection == GridDirection.East)
+        else if (cell.bestDirection == TutorialGridDirection.East)
         {
             iconSR.sprite = arrow;
             Quaternion newRot = Quaternion.Euler(90, 90, 0);
             iconGO.transform.rotation = newRot;
         }
-        else if (cell.bestDirection == GridDirection.West)
+        else if (cell.bestDirection == TutorialGridDirection.West)
         {
             iconSR.sprite = arrow;
             Quaternion newRot = Quaternion.Euler(90, 270, 0);
             iconGO.transform.rotation = newRot;
         }
-        else if (cell.bestDirection == GridDirection.NorthEast)
+        else if (cell.bestDirection == TutorialGridDirection.NorthEast)
         {
             iconSR.sprite = arrow;
             Quaternion newRot = Quaternion.Euler(90, 0, 0);
             iconGO.transform.rotation = newRot;
         }
-        else if (cell.bestDirection == GridDirection.NorthWest)
+        else if (cell.bestDirection == TutorialGridDirection.NorthWest)
         {
             iconSR.sprite = arrow;
             Quaternion newRot = Quaternion.Euler(90, 270, 0);
             iconGO.transform.rotation = newRot;
         }
-        else if (cell.bestDirection == GridDirection.SouthEast)
+        else if (cell.bestDirection == TutorialGridDirection.SouthEast)
         {
             iconSR.sprite = arrow;
             Quaternion newRot = Quaternion.Euler(90, 90, 0);
             iconGO.transform.rotation = newRot;
         }
-        else if (cell.bestDirection == GridDirection.SouthWest)
+        else if (cell.bestDirection == TutorialGridDirection.SouthWest)
         {
             iconSR.sprite = arrow;
             Quaternion newRot = Quaternion.Euler(90, 180, 0);
@@ -182,7 +182,7 @@ public class GridDebug : MonoBehaviour
         {
             case FlowFieldDisplayType.CostField:
 
-                foreach (Cell curCell in curFlowField.grid)
+                foreach (TutorialCell curCell in curFlowField.grid)
                 {
                     Handles.Label(
                         curCell.worldPos,
@@ -194,7 +194,7 @@ public class GridDebug : MonoBehaviour
 
             case FlowFieldDisplayType.IntegrationField:
 
-                foreach (Cell curCell in curFlowField.grid)
+                foreach (TutorialCell curCell in curFlowField.grid)
                 {
                     Handles.Label(
                         curCell.worldPos,

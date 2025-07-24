@@ -3,16 +3,16 @@ using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
 
-public class FlowField
+public class TutorialFlowField
 {
-    public Cell[,] grid { get; private set; }
+    public TutorialCell[,] grid { get; private set; }
     public Vector2Int gridSize { get; private set; }
     public float cellRadius { get; private set; }
-    public Cell destinationCell;
+    public TutorialCell destinationCell;
 
     private float cellDiameter;
 
-    public FlowField(float _cellRadius, Vector2Int _gridSize)
+    public TutorialFlowField(float _cellRadius, Vector2Int _gridSize)
     {
         cellRadius = _cellRadius;
         cellDiameter = cellRadius * 2f;
@@ -21,7 +21,7 @@ public class FlowField
 
     public void CreateGrid()
     {
-        grid = new Cell[gridSize.x, gridSize.y];
+        grid = new TutorialCell[gridSize.x, gridSize.y];
 
         for (int x = 0; x < gridSize.x; x++)
         {
@@ -32,7 +32,7 @@ public class FlowField
                     0,
                     cellDiameter * y + cellRadius
                 );
-                grid[x, y] = new Cell(worldPos, new Vector2Int(x, y));
+                grid[x, y] = new TutorialCell(worldPos, new Vector2Int(x, y));
             }
         }
     }
@@ -41,7 +41,7 @@ public class FlowField
     {
         Vector3 cellHalfExtents = Vector3.one * cellRadius;
         int terrainMask = LayerMask.GetMask("Impassible", "RoughTerrain");
-        foreach (Cell curCell in grid)
+        foreach (TutorialCell curCell in grid)
         {
             Collider[] obstacles = Physics.OverlapBox(
                 curCell.worldPos,
@@ -66,25 +66,25 @@ public class FlowField
         }
     }
 
-    public void CreateIntegrationField(Cell _destinationCell)
+    public void CreateIntegrationField(TutorialCell _destinationCell)
     {
         destinationCell = _destinationCell;
 
         destinationCell.cost = 0;
         destinationCell.bestCost = 0;
 
-        Queue<Cell> cellsToCheck = new Queue<Cell>();
+        Queue<TutorialCell> cellsToCheck = new Queue<TutorialCell>();
 
         cellsToCheck.Enqueue(destinationCell);
 
         while (cellsToCheck.Count > 0)
         {
-            Cell curCell = cellsToCheck.Dequeue();
-            List<Cell> curNeighbors = GetNeighborCells(
+            TutorialCell curCell = cellsToCheck.Dequeue();
+            List<TutorialCell> curNeighbors = GetNeighborCells(
                 curCell.gridIndex,
-                GridDirection.CardinalDirections
+                TutorialGridDirection.CardinalDirections
             );
-            foreach (Cell curNeighbor in curNeighbors)
+            foreach (TutorialCell curNeighbor in curNeighbors)
             {
                 if (curNeighbor.cost == byte.MaxValue)
                 {
@@ -103,38 +103,42 @@ public class FlowField
 
     public void CreateFlowField()
     {
-        foreach (Cell curCell in grid)
+        foreach (TutorialCell curCell in grid)
         {
-            List<Cell> curNeighbors = GetNeighborCells(
+            List<TutorialCell> curNeighbors = GetNeighborCells(
                 curCell.gridIndex,
-                GridDirection.AllDirections
+                TutorialGridDirection.AllDirections
             );
 
             int bestCost = curCell.bestCost;
 
-            foreach (Cell curNeighbor in curNeighbors)
+            foreach (TutorialCell curNeighbor in curNeighbors)
             {
                 if (curNeighbor.bestCost < bestCost)
                 {
                     bestCost = curNeighbor.bestCost;
-                    curCell.bestDirection = GridDirection.GetDirectionFromV2I(
-                        curNeighbor.gridIndex - curCell.gridIndex
-                    );
+                    curCell.bestDirection =
+                        TutorialGridDirection.GetDirectionFromV2I(
+                            curNeighbor.gridIndex - curCell.gridIndex
+                        );
                 }
             }
         }
     }
 
-    private List<Cell> GetNeighborCells(
+    private List<TutorialCell> GetNeighborCells(
         Vector2Int nodeIndex,
-        List<GridDirection> directions
+        List<TutorialGridDirection> directions
     )
     {
-        List<Cell> neighborCells = new List<Cell>();
+        List<TutorialCell> neighborCells = new List<TutorialCell>();
 
         foreach (Vector2Int curDirection in directions)
         {
-            Cell newNeighbor = GetCellAtRelativePos(nodeIndex, curDirection);
+            TutorialCell newNeighbor = GetCellAtRelativePos(
+                nodeIndex,
+                curDirection
+            );
             if (newNeighbor != null)
             {
                 neighborCells.Add(newNeighbor);
@@ -143,7 +147,7 @@ public class FlowField
         return neighborCells;
     }
 
-    private Cell GetCellAtRelativePos(
+    private TutorialCell GetCellAtRelativePos(
         Vector2Int orignPos,
         Vector2Int relativePos
     )
@@ -165,7 +169,7 @@ public class FlowField
         }
     }
 
-    public Cell GetCellFromWorldPos(Vector3 worldPos)
+    public TutorialCell GetCellFromWorldPos(Vector3 worldPos)
     {
         float percentX = worldPos.x / (gridSize.x * cellDiameter);
         float percentY = worldPos.z / (gridSize.y * cellDiameter);

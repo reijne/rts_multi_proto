@@ -1,6 +1,5 @@
 using System;
 using System.Collections.Generic;
-using System.Linq;
 using UnityEngine;
 
 public enum CellType
@@ -12,27 +11,23 @@ public enum CellType
     Terrain,
 }
 
-// private struct CostField
-// {
-
-// }
-
-// private struct IntegrationField
-// {
-
-// }
-
-// private struct
-
 public class GridPlane : MonoBehaviour
 {
     public static GridPlane singleton { get; private set; }
-    public Grid grid;
+
+    [SerializeField]
+    private Grid grid;
+    private Vector2Int gridSize;
+
     private Material material;
+
+    private FlowField flowField;
 
     // Entities tracked by world cell position
     private Dictionary<Vector3Int, Tuple<CellType, Entity>> cells =
         new Dictionary<Vector3Int, Tuple<CellType, Entity>>();
+
+    private bool showFlowField = false;
 
     void Awake()
     {
@@ -44,10 +39,28 @@ public class GridPlane : MonoBehaviour
         singleton = this;
         DontDestroyOnLoad(gameObject);
 
-        // material = GetComponent<MeshRenderer>().material;
-        // float scaleX = transform.localScale.x * 10 / grid.cellSize.x;
-        // float scaleY = transform.localScale.z * 10 / grid.cellSize.z;
-        // material.mainTextureScale = new Vector2(scaleX, scaleY);
+        float scaleX = transform.localScale.x * 10 / grid.cellSize.x;
+        float scaleY = transform.localScale.z * 10 / grid.cellSize.z;
+
+        // Center the grid on this plane.
+        Vector3 offset = new Vector3(scaleX / 2, 0, scaleY / 2);
+        grid.gameObject.transform.position -= offset;
+        gameObject.transform.position += offset;
+
+        gridSize = new Vector2Int(
+            Mathf.RoundToInt(scaleX),
+            Mathf.RoundToInt(scaleY)
+        );
+
+        material = GetComponent<MeshRenderer>().material;
+        material.mainTextureScale = new Vector2(scaleX, scaleY);
+    }
+
+    void Start()
+    {
+        Debug.Log("Initializing flowField...");
+        flowField = new FlowField(grid, gridSize);
+        Debug.Log("done with flowField");
     }
 
     private Vector3Int worldToCell(Vector3 worldPos) =>
@@ -191,22 +204,32 @@ public class GridPlane : MonoBehaviour
     }
 
     // DEBUG clicking.
-    // void OnMouseDown()
-    // {
-    //     Game.singleton.GetHit()
-    //         .ifJust(hit =>
-    //         {
-    //             Vector3Int cell = grid.WorldToCell(hit);
-    //             DebugHighlightCellBox(cell, Color.white);
-    //         });
-    // }
+    void OnMouseDown()
+    {
+        Game.singleton.GetHit()
+            .ifJust(hit =>
+            {
+                DebugHighlightCellBox(worldToCell(hit), Color.red);
+                // TODO: Store the created flow field for later use in case
+                // we want to move to the same location.
+                flowField.Create(hit);
+            });
+    }
 
     void Update()
     {
+        if (Input.GetKeyDown(KeyCode.F))
+            showFlowField = !showFlowField;
         // foreach (Vector3Int cellPos in cells.Keys)
         // {
         //     DebugHighlightCellBox(cellPos, Color.green);
         // }
+    }
+
+    void OnDrawGizmos()
+    {
+        if (showFlowField)
+            flowField?.DebugDrawGrid();
     }
 
     // Draw the outline of a cell using Debug.DrawLine, only in Editor.

@@ -2,9 +2,9 @@ using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
 
-public class UnitController : MonoBehaviour
+public class TutorialUnitController : MonoBehaviour
 {
-    public GridController gridController;
+    public TutorialGridController gridController;
     public GameObject unitPrefab;
     public int numUnitsPerSpawn;
     public float moveSpeed;
@@ -37,9 +37,10 @@ public class UnitController : MonoBehaviour
         }
         foreach (GameObject unit in unitsInGame)
         {
-            Cell cellBelow = gridController.curFlowField.GetCellFromWorldPos(
-                unit.transform.position
-            );
+            TutorialCell cellBelow =
+                gridController.curFlowField.GetCellFromWorldPos(
+                    unit.transform.position
+                );
             Vector3 moveDirection = new Vector3(
                 cellBelow.bestDirection.Vector.x,
                 0,
