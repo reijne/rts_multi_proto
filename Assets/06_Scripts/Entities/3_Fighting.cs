@@ -1,3 +1,5 @@
+using System;
+using System.Collections.Generic;
 using UnityEngine;
 
 public class Fighting : MonoBehaviour
@@ -7,31 +9,41 @@ public class Fighting : MonoBehaviour
     private Moving moving;
     private float lastAttackTime = Mathf.NegativeInfinity;
     private Health currentTargetEnemy;
+    private Cell targetFilter;
 
     void Start()
     {
         entity = GetComponent<Entity>();
 
+        // TODO: Expand for buildings as well.
+        if (entity.entityData.Actor == EntityActor.player)
+            targetFilter = Cell.EnemyUnit;
+        else
+            targetFilter = Cell.Unit;
+
         // Possible attributes.
         moving = GetComponent<Moving>();
     }
 
-    void OnDrawGizmos()
-    {
-        // Debug: show attack range of the fighter.
-        Gizmos.color = Color.red;
-        Gizmos.DrawWireSphere(transform.position, fightingData.Ranges.attack);
+    // void OnDrawGizmos()
+    // {
+    //     // Debug: show attack range of the fighter.
+    //     Gizmos.color = Color.red;
+    //     Gizmos.DrawWireSphere(transform.position, fightingData.Ranges.attack);
 
-        // Debug: show vision of the fighter.
-        Gizmos.color = Color.blue;
-        Gizmos.DrawWireSphere(transform.position, fightingData.Ranges.vision);
-    }
+    //     // Debug: show vision of the fighter.
+    //     Gizmos.color = Color.blue;
+    //     Gizmos.DrawWireSphere(transform.position, fightingData.Ranges.vision);
+    // }
+
+    private float nextCheckTime = 0f;
 
     void Update()
     {
-        if (!entity.Enabled)
+        if (!entity.Enabled || Time.time < nextCheckTime)
             return;
 
+        nextCheckTime = Time.time + UnityEngine.Random.Range(1f, 1.5f);
         updateClosestEnemy();
         attack();
     }
@@ -60,35 +72,26 @@ public class Fighting : MonoBehaviour
         currentTargetEnemy = getClosetEnemyInSight();
     }
 
-    Health getHealth(Collider hit)
-    {
-        if (hit.gameObject == gameObject)
-            return null;
-
-        Entity targetEntity = hit.GetComponent<Entity>();
-        if (targetEntity == null)
-            return null;
-
-        if (targetEntity.entityData.Actor == entity.entityData.Actor)
-            return null;
-
-        return targetEntity.GetComponent<Health>();
-    }
-
     Health getClosetEnemyInSight()
     {
-        Collider[] hits = Physics.OverlapSphere(
+        List<Tuple<Cell, Entity>> inRange = GridPlane.singleton.GetCellsInRange(
             transform.position,
-            fightingData.Ranges.vision
+            fightingData.Ranges.vision,
+            targetFilter
+        );
+        Debug.Log(
+            "getClosetEnemyInSight filter"
+                + targetFilter
+                + "inRange:"
+                + inRange.Count
         );
 
         Health closestEnemy = null;
         float closestDistance = float.PositiveInfinity;
 
-        for (int i = 0; i < hits.Length; i++)
+        for (int i = 0; i < inRange.Count; i++)
         {
-            Collider hit = hits[i];
-            Health enemy = getHealth(hit);
+            Health enemy = inRange[i].Item2.health;
             if (
                 enemy != null
                 && distanceTo(enemy) < closestDistance
@@ -99,6 +102,7 @@ public class Fighting : MonoBehaviour
             }
         }
 
+        Debug.Log("ClosestEnemyInSight returning: " + closestEnemy);
         return closestEnemy;
     }
 

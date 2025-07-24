@@ -67,7 +67,7 @@ public class Spawning : MonoBehaviour
             )
         )
         {
-            AddUnitToQueue(5);
+            AddUnitToQueue(50);
         }
         else if (
             Input.GetKeyDown(KeyCode.Q)
@@ -76,7 +76,7 @@ public class Spawning : MonoBehaviour
             )
         )
         {
-            AddUnitToQueue(1);
+            AddUnitToQueue(10);
         }
     }
 
@@ -88,38 +88,41 @@ public class Spawning : MonoBehaviour
         )
             return;
 
-        timeOfLastSpawn = Time.time;
-        UnitQueue -= 1;
-        ResourceController.singleton.DecrementGlobalQueue();
+        for (int i = 0; i < 10; i++)
+        {
+            timeOfLastSpawn = Time.time;
+            UnitQueue -= 1;
+            ResourceController.singleton.DecrementGlobalQueue();
 
-        Vector3 direction = (spawnPosition - transform.position).normalized;
-        // Ensure we do not spawn inside the building, just pick "forward".
-        if (direction == Vector3.zero)
-            direction = transform.forward;
+            Vector3 direction = (spawnPosition - transform.position).normalized;
+            // Ensure we do not spawn inside the building, just pick "forward".
+            if (direction == Vector3.zero)
+                direction = transform.forward;
 
-        // Half extents of the building in world space
-        Vector3 halfExtents = transform.localScale / 2f;
+            // Half extents of the building in world space
+            Vector3 halfExtents = transform.localScale / 2f;
 
-        // Build the offset: only use X and Z, match Y with current position
-        Vector3 spawnOffset = new Vector3(
-            direction.x * halfExtents.x,
-            10f,
-            direction.z * halfExtents.z
-        );
+            // Build the offset: only use X and Z, match Y with current position
+            Vector3 spawnOffset = new Vector3(
+                direction.x * halfExtents.x,
+                10f,
+                direction.z * halfExtents.z
+            );
 
-        // Final spawn point is the building position + offset
-        Vector3 instantiatePosition = transform.position + spawnOffset;
+            // Final spawn point is the building position + offset
+            Vector3 instantiatePosition = transform.position + spawnOffset;
 
-        // Match Y with the building's base Y
-        instantiatePosition.y = 0;
+            // Match Y with the building's base Y
+            instantiatePosition.y = 0;
 
-        GameObject ent = Instantiate(
-            prefab,
-            instantiatePosition,
-            Quaternion.identity
-        );
-        Moving movEnt = ent.GetComponent<Moving>();
-        movEnt.MoveTo(spawnPosition);
+            GameObject ent = Instantiate(
+                prefab,
+                instantiatePosition,
+                Quaternion.identity
+            );
+            Moving movEnt = ent.GetComponent<Moving>();
+            movEnt.MoveTo(spawnPosition);
+        }
     }
 
     public void SpawnPosition(Vector3 pos)

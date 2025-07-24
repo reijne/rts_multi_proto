@@ -14,7 +14,7 @@ public class Entity : MonoBehaviour
     private Collider selectCollider;
 
     // Possible health of this entity, does *not* need to exist,
-    private Health health;
+    public Health health;
 
     public bool Enabled => health == null || health.IsAlive;
 

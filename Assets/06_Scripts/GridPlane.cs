@@ -1,11 +1,15 @@
+using System;
 using System.Collections.Generic;
+using System.Linq;
 using UnityEngine;
 
 public enum Cell
 {
-    Unit = 1,
-    Building = 2,
-    Terrain = 3,
+    Unit,
+    EnemyUnit,
+    Building,
+    EnemyBuilding,
+    Terrain,
 }
 
 public class GridPlane : MonoBehaviour
@@ -14,9 +18,9 @@ public class GridPlane : MonoBehaviour
     public Grid grid;
     private Material material;
 
-    // Cells tracked by world cell position
-    private Dictionary<Vector3Int, Cell> cells =
-        new Dictionary<Vector3Int, Cell>();
+    // Entities tracked by world cell position
+    private Dictionary<Vector3Int, Tuple<Cell, Entity>> cells =
+        new Dictionary<Vector3Int, Tuple<Cell, Entity>>();
 
     void Awake()
     {
@@ -59,60 +63,52 @@ public class GridPlane : MonoBehaviour
 
     public void Free(Vector3 world) => free(worldToCell(world));
 
-    private void occupy(Vector3Int cell, Cell type) => cells[cell] = type;
+    private void occupy(Vector3Int cell, Cell type, Entity ent) =>
+        cells[cell] = new Tuple<Cell, Entity>(type, ent);
 
-    public void Occupy(Vector3 world, Cell c) => occupy(worldToCell(world), c);
+    public void Occupy(Vector3 world, Cell c, Entity ent) =>
+        occupy(worldToCell(world), c, ent);
 
-    private Vector3Int? getClosestAvailable(Vector3 current, Vector3 desired)
+    private Vector3Int? getClosestAvailable(
+        Vector3Int startCell,
+        int maxRadius = 5
+    )
     {
-        Vector3Int targetCell = grid.WorldToCell(desired);
-        HashSet<Vector3Int> visited = new HashSet<Vector3Int>();
-        Queue<Vector3Int> queue = new Queue<Vector3Int>();
+        if (isFree(startCell))
+            return startCell;
 
-        queue.Enqueue(targetCell);
-        visited.Add(targetCell);
-
-        // Directions: up, down, left, right, diagonals
-        Vector3Int[] directions =
+        for (int radius = 1; radius <= maxRadius; radius++)
         {
-            new Vector3Int(1, 0, 0),
-            new Vector3Int(-1, 0, 0),
-            new Vector3Int(0, 0, 1),
-            new Vector3Int(0, 0, -1),
-            new Vector3Int(1, 0, 1),
-            new Vector3Int(-1, 0, 1),
-            new Vector3Int(1, 0, -1),
-            new Vector3Int(-1, 0, -1),
-        };
-
-        int maxSearchRadius = 10; // Safety limit
-        int steps = 0;
-
-        while (queue.Count > 0 && steps < 1000)
-        {
-            Vector3Int cell = queue.Dequeue();
-
-            if (isFree(cell))
-                return cell;
-
-            foreach (var dir in directions)
+            for (int x = -radius; x <= radius; x++)
             {
-                Vector3Int neighbor = cell + dir;
-                if (
-                    !visited.Contains(neighbor)
-                    && Vector3Int.Distance(neighbor, targetCell)
-                        <= maxSearchRadius
-                )
+                for (int z = -radius; z <= radius; z++)
                 {
-                    queue.Enqueue(neighbor);
-                    visited.Add(neighbor);
+                    // Skip center (startCell)
+                    if (x == 0 && z == 0)
+                        continue;
+
+                    Vector3Int check = new Vector3Int(
+                        startCell.x + x,
+                        startCell.y,
+                        startCell.z + z
+                    );
+
+                    if (isFree(check))
+                        return check;
                 }
             }
-
-            steps++;
         }
 
-        return null; // No free cell found
+        return null; // Nothing found
+    }
+
+    public Vector3? GetClosestAvailable(Vector3 desired)
+    {
+        Vector3Int? closest = getClosestAvailable(worldToCell(desired));
+        if (closest.HasValue)
+            return cellToWorld(closest.Value);
+
+        return null;
     }
 
     private Vector3 moveUnitToCell(Vector3Int cellPosition)
@@ -130,7 +126,7 @@ public class GridPlane : MonoBehaviour
             return moveUnitToCell(desiredCell);
         }
 
-        Vector3Int? closest = getClosestAvailable(current, desired);
+        Vector3Int? closest = getClosestAvailable(worldToCell(desired));
         if (closest.HasValue)
         {
             DebugHighlightCellBox(closest.Value, Color.blue);
@@ -140,6 +136,45 @@ public class GridPlane : MonoBehaviour
         DebugHighlightCellBox(grid.WorldToCell(current), Color.magenta);
         // TODO: Determine an actual proper fallback.
         return current;
+    }
+
+    private List<Tuple<Cell, Entity>> getCellsInRange(
+        Vector3Int center,
+        int visionRadius,
+        Cell filter
+    )
+    {
+        Debug.Log(
+            "getCellsInRange current keys: "
+                + string.Join(", ", cells.Keys.Select(k => k.ToString()))
+        );
+        Debug.Log("gridPlane position.y" + (int)transform.position.y);
+        List<Tuple<Cell, Entity>> inRange = new List<Tuple<Cell, Entity>>();
+        for (int x = -visionRadius; x <= visionRadius; x++)
+        {
+            for (int z = -visionRadius; z <= visionRadius; z++)
+            {
+                Vector3Int checkCell = new Vector3Int(
+                    center.x + x,
+                    -10,
+                    center.z + z
+                );
+                if (isOccupied(checkCell) && cells[checkCell].Item1 == filter)
+                {
+                    inRange.Add(cells[checkCell]);
+                }
+            }
+        }
+        return inRange;
+    }
+
+    public List<Tuple<Cell, Entity>> GetCellsInRange(
+        Vector3 position,
+        int vision,
+        Cell filter
+    )
+    {
+        return getCellsInRange(worldToCell(position), vision, filter);
     }
 
     // DEBUG clicking.

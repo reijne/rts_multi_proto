@@ -71,8 +71,11 @@ public class Moving : MonoBehaviour
         }
 
         // If we can no longer move towards the desired location, give up.
-        if (!tryStepTo(location))
-            desiredLocation = null;
+        if (tryStepTo(location))
+            return;
+
+        // TODO: determine if this bouncing around when stopping is better.
+        desiredLocation = GridPlane.singleton.GetClosestAvailable(position);
     }
 
     void move(Transform target)
@@ -118,6 +121,6 @@ public class Moving : MonoBehaviour
         if (moving) // We are leaving, free our position.
             GridPlane.singleton.Free(position);
         else // We have stopped moving, time to occupy.
-            GridPlane.singleton.Occupy(position, Cell.Unit);
+            GridPlane.singleton.Occupy(position, Cell.Unit, entity);
     }
 }

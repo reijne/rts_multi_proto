@@ -8,7 +8,7 @@ using UnityEngine;
 public class FightingData : ScriptableObject
 {
     [SerializeField]
-    private Ranges ranges = new Ranges(1.5f, 10f);
+    private Ranges ranges = new Ranges(1.5f, 10);
     public Ranges Ranges => ranges;
 
     [SerializeField]
@@ -24,9 +24,9 @@ public class FightingData : ScriptableObject
 public struct Ranges
 {
     public float attack;
-    public float vision;
+    public int vision;
 
-    public Ranges(float attack, float vision)
+    public Ranges(float attack, int vision)
     {
         this.attack = attack;
         this.vision = vision;
