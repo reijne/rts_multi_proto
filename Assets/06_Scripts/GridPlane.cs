@@ -117,6 +117,11 @@ public class GridPlane : MonoBehaviour
         return grid.GetCellCenterWorld(cellPosition);
     }
 
+    public Vector3 MoveTo(Vector3 desired)
+    {
+        return cellToWorld(worldToCell(desired));
+    }
+
     public Vector3 MoveTo(Vector3 current, Vector3 desired)
     {
         Vector3Int desiredCell = grid.WorldToCell(desired);

@@ -22,7 +22,7 @@ public class Moving : MonoBehaviour
 
     public void MoveTo(Vector3 desired)
     {
-        Vector3 destination = GridPlane.singleton.MoveTo(position, desired);
+        Vector3 destination = GridPlane.singleton.MoveTo(desired);
         destination.y = 0f;
         transform.LookAt(destination);
         desiredLocation = destination;
