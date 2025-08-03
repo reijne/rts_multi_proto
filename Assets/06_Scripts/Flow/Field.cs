@@ -103,13 +103,17 @@ public class PopulatedFlowField
     private Vector3[,] directions;
     private Func<Vector3, Vector3Int> worldToCell;
 
+    public Vector3 destination { get; private set; }
+
     public PopulatedFlowField(
         Vector3[,] directions,
-        Func<Vector3, Vector3Int> worldToCell
+        Func<Vector3, Vector3Int> worldToCell,
+        Vector3 destination
     )
     {
         this.directions = directions;
         this.worldToCell = worldToCell;
+        this.destination = destination;
     }
 
     public Vector3 GetDirection(Vector3 worldPosition)
@@ -167,11 +171,9 @@ public class FlowField
     void forEachCell(Action<Cell> action)
     {
         for (int x = 0; x < width; x++)
+        for (int z = 0; z < height; z++)
         {
-            for (int z = 0; z < height; z++)
-            {
-                action(gridCells[x, z]);
-            }
+            action(gridCells[x, z]);
         }
     }
 
@@ -229,40 +231,42 @@ public class FlowField
         // Create a mapping to extract only the bestDirection from cells.
         Vector3[,] directionMap = new Vector3[width, height];
         for (int x = 0; x < width; x++)
+        for (int z = 0; z < height; z++)
         {
-            for (int z = 0; z < height; z++)
+            Cell current = gridCells[x, z];
+            ushort bestCost = current.BestCost;
+            Vector3 bestDir = Vector3.zero;
+
+            for (int n = 0; n < 8; n++)
             {
-                Cell current = gridCells[x, z];
+                Vector3Int direction = Direction.CardinalPlus[n];
+                int nx = current.x + direction.x;
+                int nz = current.z + direction.z;
 
-                ushort bestCost = current.BestCost;
+                if (!InBounds(nx, nz))
+                    continue;
 
-                for (int n = 0; n < 8; n++)
+                Cell neighbor = gridCells[nx, nz];
+
+                // If the neighbor is closer to the destination, update our new
+                // found best cost, and set the direction to it.
+                if (neighbor.BestCost < bestCost)
                 {
-                    Vector3Int direction = Direction.CardinalPlus[n];
-                    int nx = current.x + direction.x;
-                    int nz = current.z + direction.z;
-
-                    if (!InBounds(nx, nz))
-                        continue;
-
-                    Cell neighbor = gridCells[nx, nz];
-
-                    // If the neighbor is closer to the destination, update our new
-                    // found best cost, and set the direction to it.
-                    if (neighbor.BestCost < bestCost)
-                    {
-                        bestCost = neighbor.BestCost;
-                        directionMap[current.x, current.z] = direction;
-                    }
+                    bestCost = neighbor.BestCost;
+                    bestDir = new Vector3(direction.x, 0f, direction.z);
                 }
             }
+
+            directionMap[x, z] =
+                bestDir == Vector3.zero ? Vector3.zero : bestDir.normalized;
         }
 
         shouldResetBeforeCreate = true;
 
         return new PopulatedFlowField(
             directionMap,
-            worldPos => grid.WorldToCell(worldPos)
+            worldPos => grid.WorldToCell(worldPos),
+            grid.GetCellCenterWorld(destination)
         );
     }
 

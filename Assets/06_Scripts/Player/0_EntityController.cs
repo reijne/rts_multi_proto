@@ -71,29 +71,80 @@ public class EntityController : MonoBehaviour
         }
     }
 
-    Vector3 getGridOffset(int gridSize, int indexInSelection)
+    Vector3 getFormationOffset(int formationSize, int indexInSelection)
     {
-        int row = indexInSelection / gridSize;
-        int col = indexInSelection % gridSize;
+        int row = indexInSelection / formationSize;
+        int col = indexInSelection % formationSize;
 
-        float offsetX = col - (gridSize - 1) / 2f;
-        float offsetZ = row - (gridSize - 1) / 2f;
-        Vector3 offset = new Vector3(offsetX, 0, offsetZ);
-        return offset;
+        float offsetX = col - (formationSize - 1) / 2f;
+        float offsetZ = row - (formationSize - 1) / 2f;
+        Vector3 cellSize = GridPlane.singleton.CellSize;
+
+        return new Vector3(offsetX * cellSize.x, 0, offsetZ * cellSize.z);
     }
 
-    void moveSelectedEntities(Vector3 hit)
+    Vector3Int? GetClosestAvailableNotIn(
+        HashSet<Vector3Int> reserved,
+        Vector3Int start,
+        int maxRadius
+    )
     {
-        PopulatedFlowField field = GridPlane.singleton.flowField.Create(hit);
-        performActionOnSelection(
-            (entity, index) =>
-            {
-                if (entity.moving == null)
-                    return;
+        if (!reserved.Contains(start))
+            return start;
+        for (int r = 1; r <= maxRadius; r++)
+        for (int dx = -r; dx <= r; dx++)
+        for (int dz = -r; dz <= r; dz++)
+        {
+            if (dx == 0 && dz == 0)
+                continue;
+            var c = new Vector3Int(start.x + dx, start.y, start.z + dz);
+            if (!reserved.Contains(c))
+                return c;
+        }
+        return null;
+    }
 
-                entity.moving.MoveWith(field);
+    void moveSelectedEntities(Vector3 clickWorld)
+    {
+        var field = GridPlane.singleton.flowField.Create(clickWorld);
+        int formationSize = Mathf.CeilToInt(Mathf.Sqrt(selection.Count));
+
+        // Reserve unique slots
+        var reserved = new HashSet<Vector3Int>();
+        var slotWorlds = new List<Vector3>(selection.Count);
+
+        for (int i = 0; i < selection.Count; i++)
+        {
+            Vector3 offset = getFormationOffset(formationSize, i);
+            Vector3 desiredSlot = field.destination + offset;
+
+            // Snap to nearest free cell (with lightweight reservation)
+            var cell = GridPlane.singleton.WorldToCell(desiredSlot);
+            Vector3Int best = cell;
+            if (reserved.Contains(best))
+            {
+                // simple fallback to your spiral search
+                var alt = GetClosestAvailableNotIn(reserved, cell, 5);
+                if (alt.HasValue)
+                    best = alt.Value;
             }
-        );
+            reserved.Add(best);
+            slotWorlds.Add(GridPlane.singleton.CellToWorld(best));
+        }
+
+        // Send each entity with its offset toward its slot
+        for (int i = 0; i < selection.Count; i++)
+        {
+            var ent = selection[i];
+            var slot = slotWorlds[i];
+
+            if (ent.moving == null)
+                continue;
+
+            // Convert back to offset relative to the common DestinationWorld so your MoveWith(field, offset) still works
+            Vector3 offset = slot - field.destination;
+            ent.moving.MoveWith(field, offset);
+        }
     }
 
     void handleKeyboard()
