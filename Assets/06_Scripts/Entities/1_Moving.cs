@@ -4,7 +4,10 @@ public class Moving : MonoBehaviour
 {
     public MovingData movingData;
     private Entity entity;
-    PopulatedFlowField popFlowField;
+    PopulatedFlowField fieldToFormation;
+    Vector3? formationPosition;
+    Quaternion? formationRotation;
+
     Transform movingTarget;
 
     Vector3 position => transform.position;
@@ -16,13 +19,24 @@ public class Moving : MonoBehaviour
 
     public void MoveWith(PopulatedFlowField field)
     {
-        popFlowField = field;
+        fieldToFormation = field;
+        SetMoving(true);
+    }
+
+    public void MoveWith(PopulatedFlowField field, Vector3 withFormation)
+    {
+        fieldToFormation = field;
+        formationPosition = withFormation;
+        transform.LookAt(field.destination);
+        formationRotation = transform.rotation;
+        SetMoving(true);
     }
 
     // Set a target transform to move towards, essentially following that transform.
     public void MoveTo(Transform target)
     {
         movingTarget = target;
+        SetMoving(true);
     }
 
     void Update()
@@ -41,9 +55,15 @@ public class Moving : MonoBehaviour
             return;
         }
 
-        if (popFlowField != null)
+        if (fieldToFormation != null)
         {
             moveWithField();
+            return;
+        }
+
+        if (formationPosition.HasValue)
+        {
+            moveIntoFormation(formationPosition.Value);
             return;
         }
     }
@@ -51,11 +71,40 @@ public class Moving : MonoBehaviour
     bool closeEnough(Vector3 location) =>
         Vector3.Distance(position, location) <= movingData.CloseEnoughDistance;
 
+    void moveIntoFormation(Vector3 formationPos)
+    {
+        if (closeEnough(formationPos))
+        {
+            SetMoving(false);
+            formationPosition = null;
+            if (formationRotation.HasValue)
+            {
+                transform.rotation = formationRotation.Value;
+                formationRotation = null;
+            }
+            return;
+        }
+
+        step(formationPos);
+    }
+
     void moveWithField()
     {
-        Vector3 direction = popFlowField.GetDirection(transform.position);
-        transform.position +=
-            direction * movingData.MovementSpeed * Time.deltaTime;
+        Vector3 direction = fieldToFormation.GetDirection(transform.position);
+
+        // We still have to walk along the field to a place that counts as destination.
+        if (direction != Vector3.zero)
+        {
+            transform.LookAt(transform.position + direction);
+            transform.position +=
+                direction * movingData.MovementSpeed * Time.deltaTime;
+            return;
+        }
+
+        fieldToFormation = null;
+
+        if (!formationPosition.HasValue)
+            SetMoving(false);
     }
 
     void moveToTarget()
@@ -68,28 +117,14 @@ public class Moving : MonoBehaviour
         }
 
         transform.LookAt(movingTarget);
-
-        // If we can no longer move to the target, give up.
-        if (!tryStepTo(movingTarget.position))
-            movingTarget = null;
+        step(movingTarget.position);
     }
 
-    bool tryStepTo(Vector3 location)
+    void step(Vector3 location)
     {
         Vector3 direction = (location - position).normalized;
-        Vector3 newPosition =
-            position + direction * movingData.MovementSpeed * Time.deltaTime;
-
-        bool canMove =
-            GridPlane.singleton.Equals(position, newPosition)
-            || GridPlane.singleton.IsFree(newPosition);
-
-        SetMoving(canMove);
-
-        if (canMove)
-            transform.position = newPosition;
-
-        return canMove;
+        transform.position +=
+            direction * movingData.MovementSpeed * Time.deltaTime;
     }
 
     // Set the animator `isMoving` param, enabling the Run animation.
@@ -97,10 +132,5 @@ public class Moving : MonoBehaviour
     {
         if (entity.animator != null)
             entity.animator.SetBool("isMoving", moving);
-
-        if (moving) // We are leaving, free our position.
-            GridPlane.singleton.Free(position);
-        else // We have stopped moving, time to occupy.
-            GridPlane.singleton.Occupy(position, CellType.Unit, entity);
     }
 }

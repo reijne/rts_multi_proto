@@ -71,27 +71,39 @@ public class EntityController : MonoBehaviour
         }
     }
 
-    Vector3 getGridOffset(int gridSize, int indexInSelection)
+    Vector3 getFormationOffset(int formationSize, int indexInSelection)
     {
-        int row = indexInSelection / gridSize;
-        int col = indexInSelection % gridSize;
+        int row = indexInSelection / formationSize;
+        int col = indexInSelection % formationSize;
 
-        float offsetX = col - (gridSize - 1) / 2f;
-        float offsetZ = row - (gridSize - 1) / 2f;
-        Vector3 offset = new Vector3(offsetX, 0, offsetZ);
-        return offset;
+        Vector3 cellSize = GridPlane.singleton.cellSize;
+        float offsetX = (col - (formationSize - 1) / 2f) * cellSize.x;
+        float offsetZ = (row - (formationSize - 1) / 2f) * cellSize.z;
+        return new Vector3(offsetX, 0, offsetZ);
     }
 
     void moveSelectedEntities(Vector3 hit)
     {
-        PopulatedFlowField field = GridPlane.singleton.flowField.Create(hit);
+        Vector3[] destinations = new Vector3[selection.Count];
+        int formationSize = Mathf.CeilToInt(Mathf.Sqrt(selection.Count));
+
+        for (int i = 0; i < selection.Count; i++)
+        {
+            destinations[i] = hit + getFormationOffset(formationSize, i);
+        }
+
+        PopulatedFlowField field = GridPlane.singleton.flowField.Create(
+            hit,
+            destinations
+        );
+
         performActionOnSelection(
             (entity, index) =>
             {
                 if (entity.moving == null)
                     return;
 
-                entity.moving.MoveWith(field);
+                entity.moving.MoveWith(field, destinations[index]);
             }
         );
     }

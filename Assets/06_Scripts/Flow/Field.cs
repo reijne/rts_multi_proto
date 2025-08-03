@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.Linq;
 using UnityEditor;
 using UnityEngine;
 
@@ -103,13 +104,17 @@ public class PopulatedFlowField
     private Vector3[,] directions;
     private Func<Vector3, Vector3Int> worldToCell;
 
+    public Vector3 destination { get; private set; }
+
     public PopulatedFlowField(
         Vector3[,] directions,
-        Func<Vector3, Vector3Int> worldToCell
+        Func<Vector3, Vector3Int> worldToCell,
+        Vector3 destination
     )
     {
         this.directions = directions;
         this.worldToCell = worldToCell;
+        this.destination = destination;
     }
 
     public Vector3 GetDirection(Vector3 worldPosition)
@@ -121,6 +126,9 @@ public class PopulatedFlowField
 
 public class FlowField
 {
+    static readonly Vector3Int[] EMPTY_V3INT = new Vector3Int[0];
+    static readonly Vector3[] EMPTY_V3 = new Vector3[0];
+
     // The actual grid in the world, used for translating between world and
     // grid space.
     readonly Grid grid;
@@ -183,14 +191,26 @@ public class FlowField
     }
 
     // Populate the cells with best costs, based on a destination.
-    void createIntegrationField(Vector3Int destination)
+    void createIntegrationField(
+        Vector3Int destination, // Main destination.
+        IEnumerable<Vector3Int> destinations // Any other destinations that are acceptable.
+    )
     {
+        Queue<Cell> cellsToCheck = new Queue<Cell>();
+
         Cell destinationCell = gridCells[destination.x, destination.z];
         destinationCell.Cost = 0;
         destinationCell.BestCost = 0;
-
-        Queue<Cell> cellsToCheck = new Queue<Cell>();
         cellsToCheck.Enqueue(destinationCell);
+
+        foreach (Vector3Int dest in destinations)
+        {
+            Cell destCell = gridCells[dest.x, dest.z];
+            destCell.Cost = 0;
+            destCell.BestCost = 0;
+            cellsToCheck.Enqueue(destCell);
+        }
+
         while (cellsToCheck.Count > 0)
         {
             Cell current = cellsToCheck.Dequeue();
@@ -218,56 +238,79 @@ public class FlowField
         }
     }
 
-    private PopulatedFlowField create(Vector3Int destination)
+    private PopulatedFlowField create(
+        Vector3Int destination,
+        IEnumerable<Vector3Int> destinations
+    )
     {
         if (shouldResetBeforeCreate)
             reset();
 
         // Populate all the bestCosts, so we can determine bestDirection from those.
-        createIntegrationField(destination);
+        createIntegrationField(destination, destinations);
 
         // Create a mapping to extract only the bestDirection from cells.
         Vector3[,] directionMap = new Vector3[width, height];
         for (int x = 0; x < width; x++)
+        for (int z = 0; z < height; z++)
         {
-            for (int z = 0; z < height; z++)
+            Cell current = gridCells[x, z];
+            ushort bestCost = current.BestCost;
+            Vector3 bestDirection = Vector3.zero;
+
+            for (int n = 0; n < 8; n++)
             {
-                Cell current = gridCells[x, z];
+                Vector3Int direction = Direction.CardinalPlus[n];
+                int nx = current.x + direction.x;
+                int nz = current.z + direction.z;
 
-                ushort bestCost = current.BestCost;
+                if (!InBounds(nx, nz))
+                    continue;
 
-                for (int n = 0; n < 8; n++)
+                Cell neighbor = gridCells[nx, nz];
+
+                // If the neighbor is closer to the destination, update our new
+                // found best cost, and set the direction to it.
+                if (neighbor.BestCost < bestCost)
                 {
-                    Vector3Int direction = Direction.CardinalPlus[n];
-                    int nx = current.x + direction.x;
-                    int nz = current.z + direction.z;
-
-                    if (!InBounds(nx, nz))
-                        continue;
-
-                    Cell neighbor = gridCells[nx, nz];
-
-                    // If the neighbor is closer to the destination, update our new
-                    // found best cost, and set the direction to it.
-                    if (neighbor.BestCost < bestCost)
-                    {
-                        bestCost = neighbor.BestCost;
-                        directionMap[current.x, current.z] = direction;
-                    }
+                    bestCost = neighbor.BestCost;
+                    bestDirection = direction;
                 }
             }
+
+            directionMap[x, z] =
+                bestDirection == Vector3.zero
+                    ? Vector3.zero
+                    : bestDirection.normalized;
         }
 
         shouldResetBeforeCreate = true;
 
         return new PopulatedFlowField(
             directionMap,
-            worldPos => grid.WorldToCell(worldPos)
+            worldPos => grid.WorldToCell(worldPos),
+            grid.GetCellCenterWorld(destination)
         );
     }
 
-    public PopulatedFlowField Create(Vector3 destination) =>
-        create(grid.WorldToCell(destination));
+    public PopulatedFlowField Create(Vector3 destination)
+    {
+        return create(grid.WorldToCell(destination), EMPTY_V3INT);
+    }
+
+    public PopulatedFlowField Create(
+        Vector3 destination,
+        IEnumerable<Vector3> destinations
+    )
+    {
+        Vector3Int[] gridDestinations = new Vector3Int[destinations.Count()];
+        int i = 0;
+        foreach (Vector3 dest in destinations)
+        {
+            gridDestinations[i++] = grid.WorldToCell(dest);
+        }
+        return create(grid.WorldToCell(destination), gridDestinations);
+    }
 
     void InitDebugResources()
     {

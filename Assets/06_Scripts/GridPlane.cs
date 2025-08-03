@@ -18,6 +18,7 @@ public class GridPlane : MonoBehaviour
     [SerializeField]
     private Grid grid;
     public Vector2Int GridSize { get; private set; }
+    public Vector3 cellSize => grid.cellSize;
 
     private Material material;
 
