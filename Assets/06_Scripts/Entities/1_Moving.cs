@@ -4,32 +4,22 @@ public class Moving : MonoBehaviour
 {
     public MovingData movingData;
     private Entity entity;
-
-    Vector3? desiredLocation;
+    PopulatedFlowField popFlowField;
     Transform movingTarget;
 
     Vector3 position => transform.position;
 
-    // TODO: Add this back in if the position calculation becomes too
-    // heavy to check each update for grid position.
-    // Vector3Int gridPosition;
-
     void Start()
     {
         entity = GetComponent<Entity>();
-        // gridPosition = GridPlane.singleton.WorldToCell(position);
     }
 
-    public void MoveTo(Vector3 desired)
+    public void MoveWith(PopulatedFlowField field)
     {
-        Vector3 destination = GridPlane.singleton.MoveTo(desired);
-        destination.y = 0f;
-        transform.LookAt(destination);
-        desiredLocation = destination;
+        popFlowField = field;
     }
 
     // Set a target transform to move towards, essentially following that transform.
-    // Manual MoveTo a set location takes precedence over this target.
     public void MoveTo(Transform target)
     {
         movingTarget = target;
@@ -45,15 +35,15 @@ public class Moving : MonoBehaviour
 
     void move()
     {
-        if (desiredLocation.HasValue)
+        if (movingTarget != null)
         {
-            move(desiredLocation.Value);
+            moveToTarget();
             return;
         }
 
-        if (movingTarget != null)
+        if (popFlowField != null)
         {
-            move(movingTarget);
+            moveWithField();
             return;
         }
     }
@@ -61,26 +51,16 @@ public class Moving : MonoBehaviour
     bool closeEnough(Vector3 location) =>
         Vector3.Distance(position, location) <= movingData.CloseEnoughDistance;
 
-    void move(Vector3 location)
+    void moveWithField()
     {
-        if (closeEnough(location))
-        {
-            SetMoving(false);
-            desiredLocation = null;
-            return;
-        }
-
-        // If we can no longer move towards the desired location, give up.
-        if (tryStepTo(location))
-            return;
-
-        // TODO: determine if this bouncing around when stopping is better.
-        desiredLocation = GridPlane.singleton.GetClosestAvailable(position);
+        Vector3 direction = popFlowField.GetDirection(transform.position);
+        transform.position +=
+            direction * movingData.MovementSpeed * Time.deltaTime;
     }
 
-    void move(Transform target)
+    void moveToTarget()
     {
-        if (closeEnough(target.position))
+        if (closeEnough(movingTarget.position))
         {
             SetMoving(false);
             movingTarget = null;

@@ -17,11 +17,12 @@ public class GridPlane : MonoBehaviour
 
     [SerializeField]
     private Grid grid;
-    private Vector2Int gridSize;
+    public Vector2Int GridSize { get; private set; }
 
     private Material material;
 
-    private FlowField flowField;
+    public FlowField flowField { get; private set; }
+    public PopulatedFlowField populatedFlowField { get; private set; }
 
     // Entities tracked by world cell position
     private Dictionary<Vector3Int, Tuple<CellType, Entity>> cells =
@@ -51,8 +52,9 @@ public class GridPlane : MonoBehaviour
         grid.gameObject.transform.position -= offset;
         gameObject.transform.position += offset;
 
-        gridSize = new Vector2Int(sizeX, sizeY);
+        GridSize = new Vector2Int(sizeX, sizeY);
 
+        Debug.Log($"GridSize: {GridSize}");
         material = GetComponent<MeshRenderer>().material;
         material.mainTextureScale = new Vector2(sizeX, sizeY);
     }
@@ -60,40 +62,40 @@ public class GridPlane : MonoBehaviour
     void Start()
     {
         Debug.Log("Initializing flowField...");
-        flowField = new FlowField(grid, gridSize);
+        flowField = new FlowField(grid, GridSize);
         Debug.Log("done with flowField");
     }
 
-    private Vector3Int worldToCell(Vector3 worldPos) =>
+    public Vector3Int WorldToCell(Vector3 worldPos) =>
         grid.WorldToCell(worldPos);
 
-    private Vector3 cellToWorld(Vector3Int cell) =>
+    public Vector3 CellToWorld(Vector3Int cell) =>
         grid.GetCellCenterWorld(cell);
 
     private bool equals(Vector3 a, Vector3 b) =>
-        worldToCell(a) == worldToCell(b);
+        WorldToCell(a) == WorldToCell(b);
 
     public bool Equals(Vector3 a, Vector3 b) => equals(a, b);
 
     // Functions to check the state of a cell.
     private bool isOccupied(Vector3Int cell) => cells.ContainsKey(cell);
 
-    public bool IsOccupied(Vector3 world) => isOccupied(worldToCell(world));
+    public bool IsOccupied(Vector3 world) => isOccupied(WorldToCell(world));
 
     private bool isFree(Vector3Int cell) => !isOccupied(cell);
 
-    public bool IsFree(Vector3 world) => isFree(worldToCell(world));
+    public bool IsFree(Vector3 world) => isFree(WorldToCell(world));
 
     // Functions to free or occupy a cell.
     private void free(Vector3Int cell) => cells.Remove(cell);
 
-    public void Free(Vector3 world) => free(worldToCell(world));
+    public void Free(Vector3 world) => free(WorldToCell(world));
 
     private void occupy(Vector3Int cell, CellType type, Entity ent) =>
         cells[cell] = new Tuple<CellType, Entity>(type, ent);
 
     public void Occupy(Vector3 world, CellType c, Entity ent) =>
-        occupy(worldToCell(world), c, ent);
+        occupy(WorldToCell(world), c, ent);
 
     private Vector3Int? getClosestAvailable(
         Vector3Int startCell,
@@ -130,9 +132,9 @@ public class GridPlane : MonoBehaviour
 
     public Vector3? GetClosestAvailable(Vector3 desired)
     {
-        Vector3Int? closest = getClosestAvailable(worldToCell(desired));
+        Vector3Int? closest = getClosestAvailable(WorldToCell(desired));
         if (closest.HasValue)
-            return cellToWorld(closest.Value);
+            return CellToWorld(closest.Value);
 
         return null;
     }
@@ -145,7 +147,7 @@ public class GridPlane : MonoBehaviour
 
     public Vector3 MoveTo(Vector3 desired)
     {
-        return cellToWorld(worldToCell(desired));
+        return CellToWorld(WorldToCell(desired));
     }
 
     public Vector3 MoveTo(Vector3 current, Vector3 desired)
@@ -157,7 +159,7 @@ public class GridPlane : MonoBehaviour
             return moveUnitToCell(desiredCell);
         }
 
-        Vector3Int? closest = getClosestAvailable(worldToCell(desired));
+        Vector3Int? closest = getClosestAvailable(WorldToCell(desired));
         if (closest.HasValue)
         {
             DebugHighlightCellBox(closest.Value, Color.blue);
@@ -201,31 +203,37 @@ public class GridPlane : MonoBehaviour
         CellType filter
     )
     {
-        return getCellsInRange(worldToCell(position), vision, filter);
+        return getCellsInRange(WorldToCell(position), vision, filter);
     }
 
-    // DEBUG clicking.
-    void OnMouseDown()
+    void setDestination()
     {
         Game.singleton.GetHit()
             .ifJust(hit =>
             {
-                DebugHighlightCellBox(worldToCell(hit), Color.red);
+                DebugHighlightCellBox(WorldToCell(hit), Color.red);
                 // TODO: Store the created flow field for later use in case
                 // we want to move to the same location.
-                flowField.Create(hit);
+                populatedFlowField = flowField.Create(hit);
             });
     }
 
     void Update()
     {
+        if (Input.GetMouseButtonDown(1))
+        {
+            setDestination();
+        }
+
         if (Input.GetKeyDown(KeyCode.F))
         {
             showFlowField = !showFlowField;
             // flowField?.DebugDrawGrid();
         }
+
         if (showFlowField)
             flowField?.DebugDrawGrid();
+
         // foreach (Vector3Int cellPos in cells.Keys)
         // {
         //     DebugHighlightCellBox(cellPos, Color.green);

@@ -1,3 +1,4 @@
+using System;
 using System.Collections.Generic;
 using UnityEditor;
 using UnityEngine;
@@ -76,9 +77,6 @@ class Cell
     // Best cost to move to the desired destination, used to determine direction.
     public ushort BestCost;
 
-    // Best direction to move to the desired destination from this cell.
-    public Vector3 BestDirection;
-
     // Construct with a possible cost, to allow initialization with some occupancy.
     public Cell(int x, int z, Vector3 worldPosition, byte? cost)
     {
@@ -88,7 +86,6 @@ class Cell
         this.cost = cost ?? 1;
         Cost = this.cost;
         BestCost = ushort.MaxValue;
-        BestDirection = Direction.Zero;
     }
 
     // Reset this Cell to be re-used in a new path finding calculation.
@@ -97,14 +94,33 @@ class Cell
     {
         Cost = cost; // Reset to initial cost on constructor.
         BestCost = ushort.MaxValue;
-        BestDirection = Direction.Zero;
+    }
+}
+
+// Minimal resulting field to be used in path finding.
+public class PopulatedFlowField
+{
+    private Vector3[,] directions;
+    private Func<Vector3, Vector3Int> worldToCell;
+
+    public PopulatedFlowField(
+        Vector3[,] directions,
+        Func<Vector3, Vector3Int> worldToCell
+    )
+    {
+        this.directions = directions;
+        this.worldToCell = worldToCell;
+    }
+
+    public Vector3 GetDirection(Vector3 worldPosition)
+    {
+        Vector3Int cellPos = worldToCell(worldPosition);
+        return directions[cellPos.x, cellPos.z];
     }
 }
 
 public class FlowField
 {
-    private static ushort min(ushort a, ushort b) => a < b ? a : b;
-
     // The actual grid in the world, used for translating between world and
     // grid space.
     readonly Grid grid;
@@ -148,7 +164,7 @@ public class FlowField
 
     bool InBounds(int x, int z) => x >= 0 && z >= 0 && x < width && z < height;
 
-    void forEachCell(System.Action<Cell> action)
+    void forEachCell(Action<Cell> action)
     {
         for (int x = 0; x < width; x++)
         {
@@ -202,7 +218,7 @@ public class FlowField
         }
     }
 
-    private void create(Vector3Int destination)
+    private PopulatedFlowField create(Vector3Int destination)
     {
         if (shouldResetBeforeCreate)
             reset();
@@ -210,49 +226,48 @@ public class FlowField
         // Populate all the bestCosts, so we can determine bestDirection from those.
         createIntegrationField(destination);
 
-        forEachCell(current =>
+        // Create a mapping to extract only the bestDirection from cells.
+        Vector3[,] directionMap = new Vector3[width, height];
+        for (int x = 0; x < width; x++)
         {
-            ushort bestCost = current.BestCost;
-
-            for (int n = 0; n < 8; n++)
+            for (int z = 0; z < height; z++)
             {
-                Vector3Int direction = Direction.CardinalPlus[n];
-                int nx = current.x + direction.x;
-                int nz = current.z + direction.z;
+                Cell current = gridCells[x, z];
 
-                if (!InBounds(nx, nz))
-                    continue;
+                ushort bestCost = current.BestCost;
 
-                Cell neighbor = gridCells[nx, nz];
-
-                // If the neighbor is closer to the destination, update our new
-                // found best cost, and set the direction to it.
-                if (neighbor.BestCost < bestCost)
+                for (int n = 0; n < 8; n++)
                 {
-                    bestCost = neighbor.BestCost;
-                    current.BestDirection = direction;
+                    Vector3Int direction = Direction.CardinalPlus[n];
+                    int nx = current.x + direction.x;
+                    int nz = current.z + direction.z;
+
+                    if (!InBounds(nx, nz))
+                        continue;
+
+                    Cell neighbor = gridCells[nx, nz];
+
+                    // If the neighbor is closer to the destination, update our new
+                    // found best cost, and set the direction to it.
+                    if (neighbor.BestCost < bestCost)
+                    {
+                        bestCost = neighbor.BestCost;
+                        directionMap[current.x, current.z] = direction;
+                    }
                 }
             }
-        });
+        }
 
         shouldResetBeforeCreate = true;
+
+        return new PopulatedFlowField(
+            directionMap,
+            worldPos => grid.WorldToCell(worldPos)
+        );
     }
 
-    public void Create(Vector3 destination)
-    {
-        Debug.Log("FlowField.Create, destination" + destination);
+    public PopulatedFlowField Create(Vector3 destination) =>
         create(grid.WorldToCell(destination));
-        Debug.Log("FlowField.Create, done");
-    }
-
-    // TODO: Update this to only be used when necessary, worldToCell should be
-    // avoided on critical paths, only if the gridPosition changes should we
-    // get the direction.
-    public Vector3 GetDirection(Vector3 currentLocation)
-    {
-        Vector3Int gridPosition = grid.WorldToCell(currentLocation);
-        return gridCells[gridPosition.x, gridPosition.z].BestDirection;
-    }
 
     void InitDebugResources()
     {

@@ -13,7 +13,7 @@ public class Spawning : MonoBehaviour
     private Entity entity;
 
     // Location where units will move towards upon spawning.
-    private Vector3 spawnPosition;
+    private PopulatedFlowField fieldToSpawn;
     private float timeOfLastSpawn;
     private int UnitQueue = 0;
 
@@ -21,7 +21,6 @@ public class Spawning : MonoBehaviour
     {
         timeOfLastSpawn = Time.time;
         entity = GetComponent<Entity>();
-        spawnPosition = transform.position;
 
         entity.OnSelected += showSpawnPoint;
         entity.OnDeselected += hideSpawnPoint;
@@ -44,14 +43,17 @@ public class Spawning : MonoBehaviour
     void handleMouse()
     {
         if (entity.IsSelected && Input.GetMouseButtonDown(1))
-        {
             Game.singleton.GetHit()
                 .ifJust(hit =>
                 {
-                    spawnPosition = hit;
                     spawnPointIndicator.transform.position = hit;
+                    updateSpawnPoint(hit);
                 });
-        }
+    }
+
+    void updateSpawnPoint(Vector3 hit)
+    {
+        fieldToSpawn = GridPlane.singleton.flowField.Create(hit);
     }
 
     void handleKeyboard()
@@ -94,13 +96,16 @@ public class Spawning : MonoBehaviour
             UnitQueue -= 1;
             ResourceController.singleton.DecrementGlobalQueue();
 
-            Vector3 direction = (spawnPosition - transform.position).normalized;
+            Vector3 direction = (
+                spawnPointIndicator.transform.position - transform.position
+            ).normalized;
+
             // Ensure we do not spawn inside the building, just pick "forward".
             if (direction == Vector3.zero)
                 direction = transform.forward;
 
             // Half extents of the building in world space
-            Vector3 halfExtents = transform.localScale / 2f;
+            Vector3 halfExtents = transform.localScale / 1.8f;
 
             // Build the offset: only use X and Z, match Y with current position
             Vector3 spawnOffset = new Vector3(
@@ -121,13 +126,8 @@ public class Spawning : MonoBehaviour
                 Quaternion.identity
             );
             Moving movEnt = ent.GetComponent<Moving>();
-            movEnt.MoveTo(spawnPosition);
+            movEnt.MoveWith(fieldToSpawn);
         }
-    }
-
-    public void SpawnPosition(Vector3 pos)
-    {
-        spawnPosition = pos;
     }
 
     public void AddUnitToQueue(int amount)

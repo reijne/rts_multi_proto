@@ -15,8 +15,13 @@ public class Entity : MonoBehaviour
 
     // Possible health of this entity, does *not* need to exist,
     public Health health;
-
     public bool Enabled => health == null || health.IsAlive;
+
+    // Possible moving component of this entity, does *not* need to exist.
+    public Moving moving;
+
+    // Possible fighting component of this entity, does *not* need to exist.
+    public Fighting fighting;
 
     void Start()
     {
@@ -33,6 +38,10 @@ public class Entity : MonoBehaviour
 
         // Warning: Does *not* need to exist for an Entity.
         health = GetComponent<Health>();
+        // Warning: Does *not* need to exist for an Entity.
+        moving = GetComponent<Moving>();
+        // Warning: Does *not* need to exist for an Entity.
+        fighting = GetComponent<Fighting>();
     }
 
     /// <summary>

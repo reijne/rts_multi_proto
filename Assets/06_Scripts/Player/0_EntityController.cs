@@ -84,16 +84,14 @@ public class EntityController : MonoBehaviour
 
     void moveSelectedEntities(Vector3 hit)
     {
-        int gridSize = (int)Mathf.Ceil(Mathf.Sqrt(selection.Count));
+        PopulatedFlowField field = GridPlane.singleton.flowField.Create(hit);
         performActionOnSelection(
-            (entity, idx) =>
+            (entity, index) =>
             {
-                Moving moving = entity.GetComponent<Moving>();
-
-                if (moving == null)
+                if (entity.moving == null)
                     return;
 
-                moving.MoveTo(hit + getGridOffset(gridSize, idx));
+                entity.moving.MoveWith(field);
             }
         );
     }
