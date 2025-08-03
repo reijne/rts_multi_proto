@@ -17,7 +17,6 @@ public class GridPlane : MonoBehaviour
 
     [SerializeField]
     private Grid grid;
-    public Vector3 CellSize => grid.cellSize;
     public Vector2Int GridSize { get; private set; }
 
     private Material material;
@@ -55,13 +54,16 @@ public class GridPlane : MonoBehaviour
 
         GridSize = new Vector2Int(sizeX, sizeY);
 
+        Debug.Log($"GridSize: {GridSize}");
         material = GetComponent<MeshRenderer>().material;
         material.mainTextureScale = new Vector2(sizeX, sizeY);
     }
 
     void Start()
     {
+        Debug.Log("Initializing flowField...");
         flowField = new FlowField(grid, GridSize);
+        Debug.Log("done with flowField");
     }
 
     public Vector3Int WorldToCell(Vector3 worldPos) =>

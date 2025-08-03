@@ -52,6 +52,7 @@ public class EnemyController : MonoBehaviour
         Vector3Int cell = new Vector3Int(randX, 0, randZ);
         Vector3 spawnPosition = GridPlane.singleton.CellToWorld(cell);
 
+        Debug.Log($"Spawning enemy on : {spawnPosition}");
         GameObject newEnemy = Instantiate(
             enemyPrefab,
             spawnPosition,
@@ -82,9 +83,11 @@ public class EnemyController : MonoBehaviour
 
     private void destroyEnemies()
     {
+        Debug.Log($"destroyEnemies, enemies.count: {enemies.Count}");
         int enemiesCount = enemies.Count;
         for (int i = 0; i < enemiesCount; i++)
         {
+            Debug.Log($"destroyEnemies enemy idx: {i}");
             Rigidbody enemy = enemies[i];
             Destroy(enemy.gameObject);
         }
@@ -110,6 +113,7 @@ public class EnemyController : MonoBehaviour
 
         if (Input.GetKeyDown(KeyCode.Alpha0))
         {
+            Debug.Log($"Alpha0 pressed");
             destroyEnemies();
         }
     }
