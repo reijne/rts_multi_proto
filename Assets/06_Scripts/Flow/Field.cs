@@ -40,8 +40,8 @@ static class Direction
     public static readonly Vector3Int[] Cardinals = new Vector3Int[4]
     {
         Forward,
-        Right,
         Back,
+        Right,
         Left,
     };
 
@@ -50,12 +50,12 @@ static class Direction
     public static readonly Vector3Int[] CardinalPlus = new Vector3Int[8]
     {
         Forward,
-        ForwardRight,
         Right,
-        BackRight,
         Back,
-        BackLeft,
         Left,
+        ForwardRight,
+        BackRight,
+        BackLeft,
         ForwardLeft,
     };
 }
@@ -78,6 +78,10 @@ class Cell
     // Best cost to move to the desired destination, used to determine direction.
     public ushort BestCost;
 
+    // DEBUG: Best direction to move to the desired destination,
+    // only used for DebugDrawDirections.
+    public Vector3 BestDirection;
+
     // Construct with a possible cost, to allow initialization with some occupancy.
     public Cell(int x, int z, Vector3 worldPosition, byte? cost)
     {
@@ -87,6 +91,7 @@ class Cell
         this.cost = cost ?? 1;
         Cost = this.cost;
         BestCost = ushort.MaxValue;
+        BestDirection = Vector3.zero;
     }
 
     // Reset this Cell to be re-used in a new path finding calculation.
@@ -95,6 +100,7 @@ class Cell
     {
         Cost = cost; // Reset to initial cost on constructor.
         BestCost = ushort.MaxValue;
+        BestDirection = Vector3.zero;
     }
 }
 
@@ -278,10 +284,8 @@ public class FlowField
                 }
             }
 
-            directionMap[x, z] =
-                bestDirection == Vector3.zero
-                    ? Vector3.zero
-                    : bestDirection.normalized;
+            current.BestDirection = bestDirection.normalized;
+            directionMap[x, z] = bestDirection.normalized;
         }
 
         shouldResetBeforeCreate = true;
@@ -310,6 +314,29 @@ public class FlowField
             gridDestinations[i++] = grid.WorldToCell(dest);
         }
         return create(grid.WorldToCell(destination), gridDestinations);
+    }
+
+    public void DebugDrawDirections(
+        float lineLength = 0.5f,
+        Color? colorOverride = null
+    )
+    {
+        Color color = colorOverride ?? Color.cyan;
+
+        for (int x = 0; x < width; x++)
+        for (int z = 0; z < height; z++)
+        {
+            Cell cell = gridCells[x, z];
+
+            Debug.DrawLine(
+                cell.WorldPosition,
+                cell.WorldPosition
+                    + cell.BestDirection.normalized
+                        * (grid.cellSize.x + grid.cellSize.z)
+                        * lineLength,
+                color
+            );
+        }
     }
 
     void InitDebugResources()

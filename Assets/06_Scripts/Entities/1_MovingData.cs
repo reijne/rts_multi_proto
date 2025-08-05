@@ -17,4 +17,9 @@ public class MovingData : ScriptableObject
 
     // Distance to stop moving when close enough to the target.
     public float CloseEnoughDistance => closeEnoughDistance;
+
+    [SerializeField]
+    private float collisionAvoidance = 0.1f;
+
+    public float CollisionAvoidance => collisionAvoidance;
 }

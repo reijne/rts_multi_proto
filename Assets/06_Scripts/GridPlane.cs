@@ -229,11 +229,10 @@ public class GridPlane : MonoBehaviour
         if (Input.GetKeyDown(KeyCode.F))
         {
             showFlowField = !showFlowField;
-            // flowField?.DebugDrawGrid();
         }
 
         if (showFlowField)
-            flowField?.DebugDrawGrid();
+            flowField?.DebugDrawDirections();
 
         // foreach (Vector3Int cellPos in cells.Keys)
         // {

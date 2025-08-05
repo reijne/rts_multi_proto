@@ -534,6 +534,9 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   entityData: {fileID: 11400000, guid: af8b2a59b99504650b920bea9550a8b8, type: 2}
   animator: {fileID: 0}
+  health: {fileID: 0}
+  moving: {fileID: 0}
+  fighting: {fileID: 0}
 --- !u!114 &-7083048463155683593
 MonoBehaviour:
   m_ObjectHideFlags: 0
