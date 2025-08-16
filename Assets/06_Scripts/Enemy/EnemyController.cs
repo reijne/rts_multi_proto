@@ -50,7 +50,7 @@ public class EnemyController : MonoBehaviour
         int randZ = UnityEngine.Random.Range(0, GridPlane.singleton.GridSize.y);
 
         Vector3Int cell = new Vector3Int(randX, 0, randZ);
-        Vector3 spawnPosition = GridPlane.singleton.CellToWorld(cell);
+        Vector3 spawnPosition = GridPlane.singleton.Grid.CellToWorld(cell);
 
         Debug.Log($"Spawning enemy on : {spawnPosition}");
         GameObject newEnemy = Instantiate(
@@ -72,8 +72,8 @@ public class EnemyController : MonoBehaviour
             GridPlane.singleton.GridSize.y - 1
         );
 
-        Vector3 minWorld = GridPlane.singleton.CellToWorld(minCell);
-        Vector3 maxWorld = GridPlane.singleton.CellToWorld(maxCell);
+        Vector3 minWorld = GridPlane.singleton.Grid.CellToWorld(minCell);
+        Vector3 maxWorld = GridPlane.singleton.Grid.CellToWorld(maxCell);
 
         for (int i = 0; i < amountOfSpawns; i++)
         {

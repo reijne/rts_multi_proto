@@ -36,7 +36,7 @@ public class Fighting : MonoBehaviour
     //     Gizmos.DrawWireSphere(transform.position, fightingData.Ranges.vision);
     // }
 
-    private float nextCheckTime = 0f;
+    private float nextCheckTime = 1.5f;
 
     void Update()
     {
@@ -44,8 +44,10 @@ public class Fighting : MonoBehaviour
             return;
 
         nextCheckTime = Time.time + UnityEngine.Random.Range(1f, 1.5f);
-        updateClosestEnemy();
-        attack();
+
+        // TODO: Fix this mess lol, dont attack your teammates ey.
+        // updateClosestEnemy();
+        // attack();
     }
 
     float distanceTo(Health target) =>
@@ -74,19 +76,17 @@ public class Fighting : MonoBehaviour
 
     Health getClosetEnemyInSight()
     {
-        List<Tuple<CellType, Entity>> inRange =
-            GridPlane.singleton.GetCellsInRange(
-                transform.position,
-                fightingData.Ranges.vision,
-                targetFilter
-            );
+        List<Entity> inRange = GridPlane.singleton.GetEntitiesInRange(
+            transform.position,
+            fightingData.Ranges.vision
+        );
 
         Health closestEnemy = null;
         float closestDistance = float.PositiveInfinity;
 
         for (int i = 0; i < inRange.Count; i++)
         {
-            Health enemy = inRange[i].Item2.health;
+            Health enemy = inRange[i].health;
             if (
                 enemy != null
                 && distanceTo(enemy) < closestDistance

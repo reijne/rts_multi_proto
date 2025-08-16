@@ -6,24 +6,32 @@ public class EntityController : MonoBehaviour
 {
     public static EntityController singleton { get; private set; }
 
+    [SerializeField]
+    /// <summary> The height of the box we select entities in. </summary>
+    private float selectionHeight;
+
     public List<Entity> entities = new List<Entity>();
+
+    // Private attributes that are guaranteed to exist.
     private List<Entity> selection = new List<Entity>();
-    private Vector2? mouseDown;
-    private Vector2? mouseUp;
 
-    public float selectionHeight;
+    Vector2? mouseDown;
+    Vector2? mouseUp;
 
+    /// <summary> Add an `Entity` to the entire list of entities in this controller. </summary>
     public void Add(Entity entity)
     {
         entities.Add(entity);
     }
 
+    /// <summary> Remove an `Entity` to the entire list of entities in this controller. </summary>
     public void Remove(Entity entity)
     {
         entities.Remove(entity);
         selection.Remove(entity);
     }
 
+    /// <summary> Set this controller to be a singleton, without destroy on load. </summary>
     void Awake()
     {
         if (singleton != null && singleton != this)
@@ -40,7 +48,6 @@ public class EntityController : MonoBehaviour
     {
         handleMouse();
         handleKeyboard();
-        performSelection();
     }
 
     void OnGUI()
@@ -51,7 +58,10 @@ public class EntityController : MonoBehaviour
     void handleMouse()
     {
         captureMousePositions();
-        handleRightClick();
+        handleMouseRightClick();
+
+        // TODO: Select on double click.
+        performMouseSelection();
     }
 
     void captureMousePositions()
@@ -63,33 +73,73 @@ public class EntityController : MonoBehaviour
             mouseUp = Input.mousePosition;
     }
 
-    void handleRightClick()
+    void handleMouseRightClick()
     {
         if (Input.GetMouseButtonDown(1))
         {
-            Game.singleton.GetHit().ifJust(moveSelectedEntities);
+            if (selection.Count > 0)
+            {
+                Debug.Log($"Selection > 0, moving...");
+                Game.GetHit().ifJust(moveSelectedEntities);
+            }
         }
     }
 
-    Vector3 getFormationOffset(int formationSize, int indexInSelection)
+    Vector3 getFormationOffset(
+        int formationSize,
+        int indexInSelection,
+        // TODO: Update formation for unit size.
+        Vector2 unitSize
+    )
     {
         int row = indexInSelection / formationSize;
         int col = indexInSelection % formationSize;
 
-        Vector3 cellSize = GridPlane.singleton.cellSize;
-        float offsetX = (col - (formationSize - 1) / 2f) * cellSize.x;
-        float offsetZ = (row - (formationSize - 1) / 2f) * cellSize.z;
+        Vector3 formationCellSize = GridPlane.singleton.cellSize;
+        float offsetX = (col - (formationSize - 1) / 2f) * formationCellSize.x;
+        float offsetZ = (row - (formationSize - 1) / 2f) * formationCellSize.z;
         return new Vector3(offsetX, 0, offsetZ);
     }
 
     void moveSelectedEntities(Vector3 hit)
     {
-        Vector3[] destinations = new Vector3[selection.Count];
-        int formationSize = Mathf.CeilToInt(Mathf.Sqrt(selection.Count));
+        // Allocate at most the entire selection, more cannot be necessary.
+        int selectionCount = selection.Count;
+        Moving[] movingSelection = new Moving[selectionCount];
 
-        for (int i = 0; i < selection.Count; i++)
+        int movingSelectionIndex = 0;
+
+        for (int e = 0; e < selectionCount; e++)
         {
-            destinations[i] = hit + getFormationOffset(formationSize, i);
+            Entity ent = selection[e];
+            if (ent.moving == null)
+                continue;
+
+            movingSelection[movingSelectionIndex++] = ent.moving;
+        }
+
+        Debug.Log($"Actual moving entities: {movingSelectionIndex}");
+        // We have no actual "moving" entities selected, abort mission!
+        if (movingSelectionIndex == 0)
+            return;
+
+        moveSelectionInFormation(hit, movingSelection);
+    }
+
+    void moveSelectionInFormation(Vector3 hit, Moving[] movingSelection)
+    {
+        Vector3[] destinations = new Vector3[movingSelection.Length];
+        int formationSize = Mathf.CeilToInt(Mathf.Sqrt(movingSelection.Length));
+
+        for (int i = 0; i < movingSelection.Length; i++)
+        {
+            destinations[i] =
+                hit
+                + getFormationOffset(
+                    formationSize,
+                    i,
+                    movingSelection[i].entity.GetScreenBoundsRect().size
+                );
         }
 
         PopulatedFlowField field = GridPlane.singleton.flowField.Create(
@@ -97,15 +147,10 @@ public class EntityController : MonoBehaviour
             destinations
         );
 
-        performActionOnSelection(
-            (entity, index) =>
-            {
-                if (entity.moving == null)
-                    return;
-
-                entity.moving.MoveWith(field, destinations[index]);
-            }
-        );
+        for (int i = 0; i < movingSelection.Length; i++)
+        {
+            movingSelection[i].MoveWith(field, destinations[i]);
+        }
     }
 
     void handleKeyboard()
@@ -143,7 +188,8 @@ public class EntityController : MonoBehaviour
         GUI.Box(rect, GUIContent.none);
     }
 
-    void performSelection()
+    /// <summary> Select entities inside the box dragged with the cursor. </summary>
+    void performMouseSelection()
     {
         if (mouseDown == null || mouseUp == null || entities.Count == 0)
             return;
@@ -166,18 +212,13 @@ public class EntityController : MonoBehaviour
         for (int i = 0; i < entities.Count; i++)
         {
             Entity entity = entities[i];
+            Rect entityScreenRect = entity.GetScreenBoundsRect();
+            if (entityScreenRect == null)
+                continue;
 
-            entity
-                .GetScreenBoundsRect()
-                .ifJust(entityScreenRect =>
-                {
-                    // Here we also allow negative overlap, meaning the
-                    // selection is within the entities box.
-                    if (entityScreenRect.Overlaps(selectionRect, true))
-                    {
-                        selection.Add(entity);
-                    }
-                });
+            // Here we also allow inverse, meaning dragging direction does not matter.
+            if (entityScreenRect.Overlaps(selectionRect, true))
+                selection.Add(entity);
         }
         select();
     }

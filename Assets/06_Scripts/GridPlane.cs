@@ -11,25 +11,77 @@ public enum CellType
     Terrain,
 }
 
+class GridEntities
+{
+    private List<Entity>[,] entities;
+    private int width;
+    private int depth; // Really its the depth of the grid.
+
+    public GridEntities(Vector2Int size)
+    {
+        width = size.x;
+        depth = size.y;
+        entities = new List<Entity>[width, depth];
+    }
+
+    public List<Entity> Get(int x, int z)
+    {
+        return entities[x, z] ?? new List<Entity> { };
+    }
+
+    /// <summary> Get the raw value from the entities. </summary>
+    /// <returns> NULL if it does not exist, otherwise the value. </returns>
+    public List<Entity> UnsafeGet(int x, int z)
+    {
+        return entities[x, z];
+    }
+
+    /// <summary> Add entity to a position </summary>
+    /// <returns> Whether we could add to the position, false if unoccupied position. </returns>
+    public bool Add(int x, int z, Entity ent)
+    {
+        List<Entity> existing = entities[x, z];
+
+        if (existing == null)
+        {
+            entities[x, z] = new List<Entity>() { ent };
+            return true;
+        }
+
+        existing.Add(ent);
+        return false;
+    }
+
+    public bool Remove(int x, int z, Entity ent)
+    {
+        List<Entity> existing = entities[x, z];
+
+        if (existing == null) // TODO: Should this throw?
+            return false;
+
+        return existing.Remove(ent);
+    }
+}
+
 public class GridPlane : MonoBehaviour
 {
     public static GridPlane singleton { get; private set; }
 
     [SerializeField]
     private Grid grid;
-    public Vector2Int GridSize { get; private set; }
+    public Grid Grid => grid;
     public Vector3 cellSize => grid.cellSize;
 
-    private Material material;
+    public Vector2Int GridSize { get; private set; }
 
     public FlowField flowField { get; private set; }
     public PopulatedFlowField populatedFlowField { get; private set; }
 
-    // Entities tracked by world cell position
-    private Dictionary<Vector3Int, Tuple<CellType, Entity>> cells =
-        new Dictionary<Vector3Int, Tuple<CellType, Entity>>();
+    // Entities tracked by world cell position (x,z)
+    private GridEntities entities;
 
     private bool showFlowField = false;
+    private bool showOccupancy = false;
 
     void Awake()
     {
@@ -41,180 +93,96 @@ public class GridPlane : MonoBehaviour
         singleton = this;
         DontDestroyOnLoad(gameObject);
 
+        setGridSize();
+        entities = new GridEntities(GridSize);
+        centerGridOnPlaneObject();
+        scaleTextureToMatchGridSize();
+    }
+
+    void setGridSize()
+    {
         int sizeX = Mathf.RoundToInt(
             transform.localScale.x * 10 / grid.cellSize.x
         );
         int sizeY = Mathf.RoundToInt(
             transform.localScale.z * 10 / grid.cellSize.z
         );
+        GridSize = new Vector2Int(sizeX, sizeY);
+    }
 
+    void centerGridOnPlaneObject()
+    {
         // Center the grid on this plane.
-        Vector3Int offset = new Vector3Int(sizeX / 2, 0, sizeY / 2);
+        Vector3Int offset = new Vector3Int(GridSize.x / 2, 0, GridSize.y / 2);
         grid.gameObject.transform.position -= offset;
         gameObject.transform.position += offset;
+    }
 
-        GridSize = new Vector2Int(sizeX, sizeY);
-
-        Debug.Log($"GridSize: {GridSize}");
-        material = GetComponent<MeshRenderer>().material;
-        material.mainTextureScale = new Vector2(sizeX, sizeY);
+    void scaleTextureToMatchGridSize()
+    {
+        GetComponent<MeshRenderer>().material.mainTextureScale = new Vector2(
+            GridSize.x,
+            GridSize.y
+        );
     }
 
     void Start()
     {
-        Debug.Log("Initializing flowField...");
         flowField = new FlowField(grid, GridSize);
-        Debug.Log("done with flowField");
     }
 
-    public Vector3Int WorldToCell(Vector3 worldPos) =>
-        grid.WorldToCell(worldPos);
-
-    public Vector3 CellToWorld(Vector3Int cell) =>
-        grid.GetCellCenterWorld(cell);
-
-    private bool equals(Vector3 a, Vector3 b) =>
-        WorldToCell(a) == WorldToCell(b);
-
-    public bool Equals(Vector3 a, Vector3 b) => equals(a, b);
-
-    // Functions to check the state of a cell.
-    private bool isOccupied(Vector3Int cell) => cells.ContainsKey(cell);
-
-    public bool IsOccupied(Vector3 world) => isOccupied(WorldToCell(world));
-
-    private bool isFree(Vector3Int cell) => !isOccupied(cell);
-
-    public bool IsFree(Vector3 world) => isFree(WorldToCell(world));
-
-    // Functions to free or occupy a cell.
-    private void free(Vector3Int cell) => cells.Remove(cell);
-
-    public void Free(Vector3 world) => free(WorldToCell(world));
-
-    private void occupy(Vector3Int cell, CellType type, Entity ent) =>
-        cells[cell] = new Tuple<CellType, Entity>(type, ent);
-
-    public void Occupy(Vector3 world, CellType c, Entity ent) =>
-        occupy(WorldToCell(world), c, ent);
-
-    private Vector3Int? getClosestAvailable(
-        Vector3Int startCell,
-        int maxRadius = 5
-    )
+    public void Spawn(Vector3Int loc, Entity ent)
     {
-        if (isFree(startCell))
-            return startCell;
+        entities.Add(loc.x, loc.z, ent);
+    }
 
-        for (int radius = 1; radius <= maxRadius; radius++)
+    /// <summary> Move an entity from a location, to the current one. </summary>
+    /// <returns> Whether the entity actually moved grid positions. </returns>
+    public bool Move(Vector3Int from, Vector3Int to, Entity ent)
+    {
+        // We did not move enough to cross into a new grid position.
+        if (to.Equals(from))
+            return false;
+
+        entities.Remove(from.x, from.z, ent);
+        entities.Add(to.x, to.z, ent);
+        return true;
+    }
+
+    List<Entity> getEntitiesInRange(Vector3Int center, int range)
+    {
+        int minX = Mathf.Max(center.x - range, 0);
+        int maxX = Mathf.Min(center.x + range, GridSize.x - 1);
+
+        int minZ = Mathf.Max(center.z - range, 0);
+        int maxZ = Mathf.Min(center.z + range, GridSize.y - 1);
+
+        var result = new List<Entity>();
+        for (int x = minX; x <= maxX; x++)
+        for (int z = minZ; z <= maxZ; z++)
         {
-            for (int x = -radius; x <= radius; x++)
-            {
-                for (int z = -radius; z <= radius; z++)
-                {
-                    // Skip center (startCell)
-                    if (x == 0 && z == 0)
-                        continue;
-
-                    Vector3Int check = new Vector3Int(
-                        startCell.x + x,
-                        startCell.y,
-                        startCell.z + z
-                    );
-
-                    if (isFree(check))
-                        return check;
-                }
-            }
+            List<Entity> occupants = entities.Get(x, z);
+            if (occupants.Count > 0)
+                result.AddRange(occupants);
         }
 
-        return null; // Nothing found
+        return result;
     }
 
-    public Vector3? GetClosestAvailable(Vector3 desired)
+    public List<Entity> GetEntitiesInRange(Vector3 position, int range)
     {
-        Vector3Int? closest = getClosestAvailable(WorldToCell(desired));
-        if (closest.HasValue)
-            return CellToWorld(closest.Value);
-
-        return null;
-    }
-
-    private Vector3 moveUnitToCell(Vector3Int cellPosition)
-    {
-        // cells.Add(cellPosition, Cell.Unit);
-        return grid.GetCellCenterWorld(cellPosition);
-    }
-
-    public Vector3 MoveTo(Vector3 desired)
-    {
-        return CellToWorld(WorldToCell(desired));
-    }
-
-    public Vector3 MoveTo(Vector3 current, Vector3 desired)
-    {
-        Vector3Int desiredCell = grid.WorldToCell(desired);
-        if (!cells.ContainsKey(desiredCell))
-        {
-            DebugHighlightCellBox(desiredCell, Color.yellow);
-            return moveUnitToCell(desiredCell);
-        }
-
-        Vector3Int? closest = getClosestAvailable(WorldToCell(desired));
-        if (closest.HasValue)
-        {
-            DebugHighlightCellBox(closest.Value, Color.blue);
-            return moveUnitToCell(closest.Value);
-        }
-
-        DebugHighlightCellBox(grid.WorldToCell(current), Color.magenta);
-        // TODO: Determine an actual proper fallback.
-        return current;
-    }
-
-    private List<Tuple<CellType, Entity>> getCellsInRange(
-        Vector3Int center,
-        int visionRadius,
-        CellType filter
-    )
-    {
-        List<Tuple<CellType, Entity>> inRange =
-            new List<Tuple<CellType, Entity>>();
-        for (int x = -visionRadius; x <= visionRadius; x++)
-        {
-            for (int z = -visionRadius; z <= visionRadius; z++)
-            {
-                Vector3Int checkCell = new Vector3Int(
-                    center.x + x,
-                    -10,
-                    center.z + z
-                );
-                if (isOccupied(checkCell) && cells[checkCell].Item1 == filter)
-                {
-                    inRange.Add(cells[checkCell]);
-                }
-            }
-        }
-        return inRange;
-    }
-
-    public List<Tuple<CellType, Entity>> GetCellsInRange(
-        Vector3 position,
-        int vision,
-        CellType filter
-    )
-    {
-        return getCellsInRange(WorldToCell(position), vision, filter);
+        return getEntitiesInRange(grid.WorldToCell(position), range);
     }
 
     void setDestination()
     {
-        Game.singleton.GetHit()
+        Game.GetHit()
             .ifJust(hit =>
             {
-                DebugHighlightCellBox(WorldToCell(hit), Color.red);
+                debugHighlightCellBox(grid.WorldToCell(hit), Color.red);
                 // TODO: Store the created flow field for later use in case
-                // we want to move to the same location.
+                // we want to move to the same location?
+                // Might not work when we have a different cost field hmmmm.
                 populatedFlowField = flowField.Create(hit);
             });
     }
@@ -222,28 +190,40 @@ public class GridPlane : MonoBehaviour
     void Update()
     {
         if (Input.GetMouseButtonDown(1))
-        {
             setDestination();
-        }
 
         if (Input.GetKeyDown(KeyCode.F))
-        {
             showFlowField = !showFlowField;
-        }
 
+        if (Input.GetKeyDown(KeyCode.G))
+            showOccupancy = !showOccupancy;
+    }
+
+    void FixedUpdate()
+    {
         if (showFlowField)
             flowField?.DebugDrawDirections();
 
-        // foreach (Vector3Int cellPos in cells.Keys)
-        // {
-        //     DebugHighlightCellBox(cellPos, Color.green);
-        // }
+        if (showOccupancy)
+            debugHighlightOccupancy();
+    }
+
+    void debugHighlightOccupancy()
+    {
+        for (int x = 0; x < GridSize.x; x++)
+        for (int z = 0; z < GridSize.y; z++)
+        {
+            List<Entity> occupants = entities.Get(x, z);
+            if (occupants.Count > 0)
+                debugHighlightCellBox(new Vector3Int(x, 0, z), Color.green);
+        }
     }
 
     // Draw the outline of a cell using Debug.DrawLine, only in Editor.
-    public void DebugHighlightCellBox(Vector3Int cell, Color color)
+    void debugHighlightCellBox(Vector3Int gridPos, Color color)
     {
-        Vector3 center = grid.GetCellCenterWorld(cell);
+        Vector3 center = grid.GetCellCenterWorld(gridPos);
+        Debug.Log($"highlight cell, worldPos: {center}");
         float halfWidth = grid.cellSize.x / 2f;
         float halfDepth = grid.cellSize.z / 2f;
         float y = 0.1f;
@@ -253,9 +233,9 @@ public class GridPlane : MonoBehaviour
         Vector3 tr = center + new Vector3(halfWidth, y, halfDepth); // top-right
         Vector3 tl = center + new Vector3(-halfWidth, y, halfDepth); // top-left
 
-        Debug.DrawLine(bl, br, color, 3f);
-        Debug.DrawLine(br, tr, color, 3f);
-        Debug.DrawLine(tr, tl, color, 3f);
-        Debug.DrawLine(tl, bl, color, 3f);
+        Debug.DrawLine(bl, br, color, Time.fixedDeltaTime);
+        Debug.DrawLine(br, tr, color, Time.fixedDeltaTime);
+        Debug.DrawLine(tr, tl, color, Time.fixedDeltaTime);
+        Debug.DrawLine(tl, bl, color, Time.fixedDeltaTime);
     }
 }

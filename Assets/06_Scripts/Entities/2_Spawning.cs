@@ -1,21 +1,28 @@
 using System;
 using UnityEngine;
-using UnityEngine.InputSystem;
 
 public class Spawning : MonoBehaviour
 {
     public SpawningData spawningEntityData;
     public GameObject spawnPointIndicator;
     public GameObject prefab;
+
     public event Action OnSelected;
     public event Action OnDeselected;
 
+    // Private attributes that are guaranteed to exist.
     private Entity entity;
 
     // Location where units will move towards upon spawning.
-    private PopulatedFlowField fieldToSpawn;
-    private float timeOfLastSpawn;
-    private int UnitQueue = 0;
+    PopulatedFlowField fieldToSpawn;
+    float timeOfLastSpawn;
+    int UnitQueue = 0;
+
+    void Awake()
+    {
+        // Hide it initially
+        // spawnPointIndicator.SetActive(false);
+    }
 
     void Start()
     {
@@ -24,9 +31,6 @@ public class Spawning : MonoBehaviour
 
         entity.OnSelected += showSpawnPoint;
         entity.OnDeselected += hideSpawnPoint;
-
-        // Hide it initially
-        spawnPointIndicator.SetActive(false);
     }
 
     void showSpawnPoint() => spawnPointIndicator.SetActive(true);
@@ -37,13 +41,17 @@ public class Spawning : MonoBehaviour
     {
         handleMouse();
         handleKeyboard();
+    }
+
+    void FixedUpdate()
+    {
         spawn();
     }
 
     void handleMouse()
     {
         if (entity.IsSelected && Input.GetMouseButtonDown(1))
-            Game.singleton.GetHit()
+            Game.GetHit()
                 .ifJust(hit =>
                 {
                     spawnPointIndicator.transform.position = hit;
@@ -56,10 +64,18 @@ public class Spawning : MonoBehaviour
         fieldToSpawn = GridPlane.singleton.flowField.Create(hit);
     }
 
+    public void AddUnitToQueue(int amount)
+    {
+        UnitQueue += amount;
+        ResourceController.singleton.IncrementGlobalQueue(amount);
+    }
+
     void handleKeyboard()
     {
         if (!entity.Enabled || !entity.IsSelected)
             return;
+
+        if (Input.GetKeyDown(KeyCode.Alpha1)) { }
 
         if (
             Input.GetKeyDown(KeyCode.Q)
@@ -90,6 +106,12 @@ public class Spawning : MonoBehaviour
         )
             return;
 
+        unsafeSpawn();
+    }
+
+    /// <summary> Spawn 10 units </summary>
+    void unsafeSpawn()
+    {
         for (int i = 0; i < 10; i++)
         {
             timeOfLastSpawn = Time.time;
@@ -105,17 +127,19 @@ public class Spawning : MonoBehaviour
                 direction = transform.forward;
 
             // Half extents of the building in world space
-            Vector3 halfExtents = transform.localScale / 1.8f;
+            Vector3 halfExtents = transform.localScale / 2f;
 
             // Build the offset: only use X and Z, match Y with current position
             Vector3 spawnOffset = new Vector3(
                 direction.x * halfExtents.x,
-                10f,
+                transform.position.y, // Height of the building.
                 direction.z * halfExtents.z
             );
 
             // Final spawn point is the building position + offset
             Vector3 instantiatePosition = transform.position + spawnOffset;
+
+            spawnPointIndicator.transform.position = instantiatePosition;
 
             // Match Y with the building's base Y
             instantiatePosition.y = 0;
@@ -128,11 +152,5 @@ public class Spawning : MonoBehaviour
             Moving movEnt = ent.GetComponent<Moving>();
             movEnt.MoveWith(fieldToSpawn);
         }
-    }
-
-    public void AddUnitToQueue(int amount)
-    {
-        UnitQueue += amount;
-        ResourceController.singleton.IncrementGlobalQueue(amount);
     }
 }

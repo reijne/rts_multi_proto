@@ -45,12 +45,12 @@ public class Entity : MonoBehaviour
     }
 
     /// <summary>
-    /// Get this entities renderer bounds in screen space.
+    ///     Get this entities renderer bounds in screen space.
     ///
-    /// So get the rectangle on the screen that surrounds this entity.
-    /// Essentially drawing a little rectangle around the entity entirely.
+    ///     So get the rectangle on the screen that surrounds this entity.
+    ///     Essentially drawing a little rectangle around the entity entirely.
     /// </summary>
-    public Maybe<Rect> GetScreenBoundsRect()
+    public Rect GetScreenBoundsRect()
     {
         Bounds bounds = selectCollider.bounds;
 
@@ -100,9 +100,7 @@ public class Entity : MonoBehaviour
             minY = Mathf.Min(minY, corner.y);
             maxY = Mathf.Max(maxY, corner.y);
         }
-        return Maybe<Rect>.of(
-            new Rect(minX, Screen.height - maxY, maxX - minX, maxY - minY)
-        );
+        return new Rect(minX, Screen.height - maxY, maxX - minX, maxY - minY);
     }
 
     public void Select()

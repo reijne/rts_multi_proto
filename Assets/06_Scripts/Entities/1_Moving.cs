@@ -3,18 +3,24 @@ using UnityEngine;
 public class Moving : MonoBehaviour
 {
     public MovingData movingData;
-    private Entity entity;
+
+    public Entity entity { get; private set; }
+    private Vector3 position => transform.position;
+
     PopulatedFlowField fieldToFormation;
     Vector3? formationPosition;
     Quaternion? formationRotation;
 
     Transform movingTarget;
 
-    Vector3 position => transform.position;
+    Vector3Int gridPosition;
 
     void Start()
     {
         entity = GetComponent<Entity>();
+
+        gridPosition = GridPlane.singleton.Grid.WorldToCell(position);
+        GridPlane.singleton.Spawn(gridPosition, entity);
     }
 
     public void MoveWith(PopulatedFlowField field)
@@ -32,21 +38,24 @@ public class Moving : MonoBehaviour
         SetMoving(true);
     }
 
-    // Set a target transform to move towards, essentially following that transform.
+    // Set a target transform to move towards, essentially following
+    // that transform.
     public void MoveTo(Transform target)
     {
         movingTarget = target;
         SetMoving(true);
     }
 
-    void Update()
+    void FixedUpdate()
     {
         if (!entity.Enabled)
             return;
 
         move();
+        afterMove();
     }
 
+    /// <summary> Move this entity according to its desired destination. </summary>
     void move()
     {
         if (movingTarget != null)
@@ -66,6 +75,16 @@ public class Moving : MonoBehaviour
             moveIntoFormation(formationPosition.Value);
             return;
         }
+    }
+
+    /// <summary> After moving, possibly update position in the grid. </summary>
+    void afterMove()
+    {
+        Vector3Int newGridPosition = GridPlane.singleton.Grid.WorldToCell(
+            position
+        );
+        GridPlane.singleton.Move(gridPosition, newGridPosition, entity);
+        gridPosition = newGridPosition;
     }
 
     bool closeEnough(Vector3 location) =>
@@ -97,7 +116,7 @@ public class Moving : MonoBehaviour
         {
             transform.LookAt(transform.position + direction);
             transform.position +=
-                direction * movingData.MovementSpeed * Time.deltaTime;
+                direction * movingData.MovementSpeed * Time.fixedDeltaTime;
             return;
         }
 
@@ -124,7 +143,7 @@ public class Moving : MonoBehaviour
     {
         Vector3 direction = (location - position).normalized;
         transform.position +=
-            direction * movingData.MovementSpeed * Time.deltaTime;
+            direction * movingData.MovementSpeed * Time.fixedDeltaTime;
     }
 
     // Set the animator `isMoving` param, enabling the Run animation.

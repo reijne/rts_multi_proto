@@ -304,6 +304,7 @@ public class FlowField
 
     public PopulatedFlowField Create(
         Vector3 destination,
+        // TODO: Ensure destinations are clamped into actual grid positions.
         IEnumerable<Vector3> destinations
     )
     {
