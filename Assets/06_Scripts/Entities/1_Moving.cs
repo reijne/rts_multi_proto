@@ -11,7 +11,7 @@ public class Moving : MonoBehaviour
     Vector3? formationPosition;
     Quaternion? formationRotation;
 
-    MovingTransformer? movingTarget;
+    MovingTarget? movingTarget;
 
     Vector3Int gridPosition;
 
@@ -42,7 +42,7 @@ public class Moving : MonoBehaviour
     // that transform.
     public void MoveTo(Transform target, float closeEnoughDistance)
     {
-        movingTarget = new MovingTransformer(target, closeEnoughDistance);
+        movingTarget = new MovingTarget(target, closeEnoughDistance);
         SetMoving(true);
     }
 
@@ -132,7 +132,7 @@ public class Moving : MonoBehaviour
             SetMoving(false);
     }
 
-    void moveToTarget(MovingTransformer movingTarget)
+    void moveToTarget(MovingTarget movingTarget)
     {
         if (
             closeEnough(
@@ -165,12 +165,12 @@ public class Moving : MonoBehaviour
     }
 }
 
-struct MovingTransformer
+struct MovingTarget
 {
     public readonly Transform transform;
     public readonly float closeEnoughDistance;
 
-    public MovingTransformer(Transform transform, float closeEnoughDistance)
+    public MovingTarget(Transform transform, float closeEnoughDistance)
     {
         this.transform = transform;
         this.closeEnoughDistance = closeEnoughDistance;
