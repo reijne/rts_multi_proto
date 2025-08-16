@@ -51,30 +51,78 @@ public class Moving : MonoBehaviour
         if (!entity.IsEnabled)
             return;
 
-        move();
+        Vector3? stepDirection = getDesiredStep();
+        if (!stepDirection.HasValue) // Nothing moved, will move, or wants to move.
+            return;
+
+        stepTowards(stepDirection.Value);
+
         afterMove();
     }
 
+    float getRandomCollision()
+    {
+        return Random.Range(
+            -GridPlane.singleton.GridSize.x / 2f,
+            GridPlane.singleton.GridSize.y / 2f
+        );
+    }
+
+    void stepTowards(Vector3 desiredDirection)
+    {
+        Vector3 newPosition =
+            position
+            + desiredDirection * movingData.MovementSpeed * Time.fixedDeltaTime;
+
+        Vector3Int newGridPosition = GridPlane.singleton.Grid.WorldToCell(
+            position
+        );
+        int occupants = GridPlane.singleton.GetCount(newGridPosition);
+
+        if (occupants == 0)
+        {
+            transform.LookAt(newPosition);
+            transform.position = newPosition;
+            Debug.Log($"No occupants, moving normally");
+            return;
+        }
+
+        Vector3 randomOffset = Vector3.zero;
+        for (int o = 0; o < occupants; o++)
+        {
+            randomOffset += new Vector3(
+                getRandomCollision(),
+                getRandomCollision(),
+                getRandomCollision()
+            );
+        }
+
+        Debug.Log($"Desired direction: {desiredDirection}");
+        Debug.Log($"    random offset: {randomOffset.normalized}");
+
+        Vector3 finalDirection = (
+            desiredDirection
+            + movingData.CollisionAvoidance * randomOffset.normalized
+        ).normalized;
+
+        transform.LookAt(finalDirection);
+        transform.position +=
+            finalDirection * movingData.MovementSpeed * Time.fixedDeltaTime;
+    }
+
     /// <summary> Move this entity according to its desired destination. </summary>
-    void move()
+    Vector3? getDesiredStep()
     {
         if (movingTarget.HasValue)
-        {
-            moveToTarget(movingTarget.Value);
-            return;
-        }
+            return moveToTarget(movingTarget.Value);
 
         if (fieldToFormation != null)
-        {
-            moveWithField();
-            return;
-        }
+            return moveWithField();
 
         if (formationPosition.HasValue)
-        {
-            moveIntoFormation(formationPosition.Value);
-            return;
-        }
+            return moveIntoFormation(formationPosition.Value);
+
+        return null;
     }
 
     /// <summary> After moving, possibly update position in the grid. </summary>
@@ -96,7 +144,7 @@ public class Moving : MonoBehaviour
         Vector3.Distance(position, location) <= closeEnoughDistance
         || closeEnough(location);
 
-    void moveIntoFormation(Vector3 formationPos)
+    Vector3? moveIntoFormation(Vector3 formationPos)
     {
         if (closeEnough(formationPos))
         {
@@ -107,32 +155,29 @@ public class Moving : MonoBehaviour
                 transform.rotation = formationRotation.Value;
                 formationRotation = null;
             }
-            return;
+            return null;
         }
 
-        step(formationPos);
+        return getStep(formationPos);
     }
 
-    void moveWithField()
+    Vector3? moveWithField()
     {
         Vector3 direction = fieldToFormation.GetDirection(transform.position);
 
         // We still have to walk along the field to a place that counts as destination.
         if (direction != Vector3.zero)
-        {
-            transform.LookAt(transform.position + direction);
-            transform.position +=
-                direction * movingData.MovementSpeed * Time.fixedDeltaTime;
-            return;
-        }
+            return direction;
 
         fieldToFormation = null;
 
         if (!formationPosition.HasValue)
             SetMoving(false);
+
+        return null;
     }
 
-    void moveToTarget(MovingTarget movingTarget)
+    Vector3? moveToTarget(MovingTarget movingTarget)
     {
         if (
             closeEnough(
@@ -143,18 +188,17 @@ public class Moving : MonoBehaviour
         {
             SetMoving(false);
             this.movingTarget = null;
-            return;
+            return null;
         }
 
-        transform.LookAt(movingTarget.transform.position);
-        step(movingTarget.transform.position);
+        // transform.LookAt(movingTarget.transform.position);
+        return getStep(movingTarget.transform.position);
     }
 
-    void step(Vector3 location)
+    Vector3 getStep(Vector3 location)
     {
         Vector3 direction = (location - position).normalized;
-        transform.position +=
-            direction * movingData.MovementSpeed * Time.fixedDeltaTime;
+        return direction;
     }
 
     // Set the animator `isMoving` param, enabling the Run animation.

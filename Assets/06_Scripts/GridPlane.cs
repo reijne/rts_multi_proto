@@ -132,6 +132,11 @@ public class GridPlane : MonoBehaviour
         flowField = new FlowField(grid, GridSize);
     }
 
+    public int GetCount(Vector3Int loc)
+    {
+        return entities.Get(loc.x, loc.z).Count;
+    }
+
     public void Spawn(Vector3Int loc, Entity ent)
     {
         entities.Add(loc.x, loc.z, ent);

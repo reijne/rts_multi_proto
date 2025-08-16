@@ -14,4 +14,4 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   movementSpeed: 5
   closeEnoughDistance: 0.1
-  collisionAvoidance: 1
+  collisionAvoidance: 0.5

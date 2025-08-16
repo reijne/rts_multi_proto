@@ -123,6 +123,7 @@ public class PopulatedFlowField
         this.destination = destination;
     }
 
+    /// <summary> Get normalized direction to walk to on flow field, given current position. </summary>
     public Vector3 GetDirection(Vector3 worldPosition)
     {
         Vector3Int cellPos = worldToCell(worldPosition);
