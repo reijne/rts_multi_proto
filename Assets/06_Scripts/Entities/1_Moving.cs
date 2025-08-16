@@ -1,4 +1,5 @@
 using System.Collections.Generic;
+using Unity.VisualScripting;
 using UnityEngine;
 
 public class Moving : MonoBehaviour
@@ -50,6 +51,12 @@ public class Moving : MonoBehaviour
         SetMoving(true);
     }
 
+    public void Nudge(Vector3 direction)
+    {
+        transform.position += movingData.CollisionAvoidance * direction;
+        updateGrid();
+    }
+
     void FixedUpdate()
     {
         if (!entity.IsEnabled)
@@ -59,43 +66,13 @@ public class Moving : MonoBehaviour
         if (!stepDirection.HasValue) // Nothing moved, will move, or wants to move.
             return;
 
-        Vector3 finalDirection = getFinalDirection(stepDirection.Value);
-
         transform.position +=
-            finalDirection.normalized // <<< THIS BOI
+            stepDirection.Value
             * movingData.MovementSpeed
             * Time.fixedDeltaTime;
 
+        updateGrid();
         afterMove();
-    }
-
-    Vector3 getFinalDirection(Vector3 desiredDirection)
-    {
-        Vector3 desiredPosition =
-            position
-            + desiredDirection * movingData.MovementSpeed * Time.fixedDeltaTime;
-        Vector3Int desiredGrid = GridPlane.singleton.Grid.WorldToCell(position);
-
-        Vector3 combinedPush = Vector3.zero;
-
-        List<Entity> occupants = GridPlane.singleton.entities.Get(
-            desiredGrid.x,
-            desiredGrid.z
-        );
-
-        foreach (Entity ent in occupants)
-        {
-            Vector3 push = desiredPosition - ent.transform.position;
-            combinedPush += push * (1f / push.sqrMagnitude);
-        }
-
-        combinedPush.y = 0;
-
-        Vector3 finalDirection =
-            desiredDirection
-            + movingData.CollisionAvoidance * combinedPush * occupants.Count;
-
-        return finalDirection;
     }
 
     /// <summary> Move this entity according to its desired destination. </summary>
@@ -113,21 +90,34 @@ public class Moving : MonoBehaviour
         return null;
     }
 
+    void updateGrid()
+    {
+        Vector3Int newGridPos = GridPlane.singleton.Grid.WorldToCell(position);
+
+        if (GridPlane.singleton.Move(gridPosition, newGridPos, entity))
+            gridPosition = newGridPos;
+    }
+
     /// <summary> After moving, possibly update position in the grid. </summary>
     void afterMove()
     {
-        Vector3Int gridPositionAfterStep = GridPlane.singleton.Grid.WorldToCell(
-            position
+        List<Entity> occupants = GridPlane.singleton.entities.Get(
+            gridPosition.x,
+            gridPosition.z
         );
 
-        if (
-            GridPlane.singleton.Move(
-                gridPosition,
-                gridPositionAfterStep,
-                entity
-            )
-        )
-            gridPosition = gridPositionAfterStep;
+        foreach (Entity o in occupants)
+        {
+            Moving mov = o.moving;
+            if (mov == null)
+                continue;
+
+            Vector3 direction = mov.position - position;
+            direction *= direction.sqrMagnitude;
+            direction.y = 0;
+
+            mov.Nudge(direction);
+        }
     }
 
     /// <summary> Location is close enough according to movingData minimum. </summary>
