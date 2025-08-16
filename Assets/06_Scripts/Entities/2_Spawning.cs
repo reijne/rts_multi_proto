@@ -72,7 +72,7 @@ public class Spawning : MonoBehaviour
 
     void handleKeyboard()
     {
-        if (!entity.Enabled || !entity.IsSelected)
+        if (!entity.IsEnabled || !entity.IsSelected)
             return;
 
         if (Input.GetKeyDown(KeyCode.Alpha1)) { }

@@ -15,7 +15,7 @@ public class Entity : MonoBehaviour
 
     // Possible health of this entity, does *not* need to exist,
     public Health health;
-    public bool Enabled => health == null || health.IsAlive;
+    public bool IsEnabled => health == null || health.IsAlive;
 
     // Possible moving component of this entity, does *not* need to exist.
     public Moving moving;

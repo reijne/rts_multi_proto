@@ -34,14 +34,15 @@ public class Health : MonoBehaviour
         currentHealth -= amount;
         if (currentHealth <= 0)
         {
-            Die();
+            die();
             return;
         }
+
         if (entity.animator != null)
             entity.animator.SetTrigger("GetHit");
     }
 
-    void Die()
+    void die()
     {
         isAlive = false;
 

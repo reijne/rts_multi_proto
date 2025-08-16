@@ -48,7 +48,7 @@ public class Moving : MonoBehaviour
 
     void FixedUpdate()
     {
-        if (!entity.Enabled)
+        if (!entity.IsEnabled)
             return;
 
         move();
