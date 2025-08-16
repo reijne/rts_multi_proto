@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.Linq;
 using UnityEngine;
 
 public class EntityController : MonoBehaviour
@@ -81,23 +82,22 @@ public class EntityController : MonoBehaviour
 
     void moveSelectedEntities(Vector3 hit)
     {
-        // Allocate at most the entire selection, more cannot be necessary.
         int selectionCount = selection.Count;
-        Moving[] movingSelection = new Moving[selectionCount];
-
-        int movingSelectionIndex = 0;
+        List<Moving> movingSelection = new List<Moving>();
 
         for (int e = 0; e < selectionCount; e++)
         {
             Entity ent = selection[e];
+
             if (ent.moving == null)
                 continue;
 
-            movingSelection[movingSelectionIndex++] = ent.moving;
+            Debug.Log($"adding moving to selection");
+            movingSelection.Add(ent.moving);
         }
 
         // We have no actual "moving" entities selected, abort mission!
-        if (movingSelectionIndex == 0)
+        if (movingSelection.Count == 0)
             return;
 
         moveSelectionInFormation(hit, movingSelection);
@@ -119,19 +119,19 @@ public class EntityController : MonoBehaviour
         return new Vector3(offsetX, 0, offsetZ);
     }
 
-    void moveSelectionInFormation(Vector3 hit, Moving[] selection)
+    void moveSelectionInFormation(Vector3 hit, List<Moving> movingSelection)
     {
-        Vector3[] destinations = new Vector3[selection.Length];
-        int formationSize = Mathf.CeilToInt(Mathf.Sqrt(selection.Length));
+        Vector3[] destinations = new Vector3[movingSelection.Count];
+        int formationSize = Mathf.CeilToInt(Mathf.Sqrt(movingSelection.Count));
 
-        for (int i = 0; i < selection.Length; i++)
+        for (int i = 0; i < movingSelection.Count; i++)
         {
             destinations[i] =
                 hit
                 + getFormationOffset(
                     formationSize,
                     i,
-                    selection[i].entity.GetScreenBoundsRect().size
+                    movingSelection[i].entity.GetScreenBoundsRect().size
                 );
         }
 
@@ -140,9 +140,9 @@ public class EntityController : MonoBehaviour
             destinations
         );
 
-        for (int i = 0; i < selection.Length; i++)
+        for (int i = 0; i < movingSelection.Count; i++)
         {
-            selection[i].MoveWith(field, destinations[i]);
+            movingSelection[i].MoveWith(field, destinations[i]);
         }
     }
 

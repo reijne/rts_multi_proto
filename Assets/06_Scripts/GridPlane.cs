@@ -12,7 +12,7 @@ public enum CellType
     Terrain,
 }
 
-class GridEntities
+public class GridEntities
 {
     private List<Entity>[,] entities;
     private int width;
@@ -79,7 +79,7 @@ public class GridPlane : MonoBehaviour
     public PopulatedFlowField populatedFlowField { get; private set; }
 
     // Entities tracked by world cell position (x,z)
-    private GridEntities entities;
+    public GridEntities entities { get; private set; }
 
     private bool showFlowField = false;
     private bool showOccupancy = false;
@@ -130,16 +130,6 @@ public class GridPlane : MonoBehaviour
     void Start()
     {
         flowField = new FlowField(grid, GridSize);
-    }
-
-    public int GetCount(Vector3Int loc)
-    {
-        return entities.Get(loc.x, loc.z).Count;
-    }
-
-    public int FindIndex(Vector3Int loc, Entity ent)
-    {
-        return entities.Get(loc.x, loc.z).FindIndex(e => e == ent);
     }
 
     public void Spawn(Vector3Int loc, Entity ent)
@@ -226,15 +216,22 @@ public class GridPlane : MonoBehaviour
         {
             List<Entity> occupants = entities.Get(x, z);
             if (occupants.Count > 0)
-                debugHighlightCellBox(new Vector3Int(x, 0, z), Color.green);
+                debugHighlightCellBox(
+                    new Vector3Int(x, 0, z),
+                    Color.green,
+                    Time.fixedDeltaTime
+                );
         }
     }
 
     // Draw the outline of a cell using Debug.DrawLine, only in Editor.
-    void debugHighlightCellBox(Vector3Int gridPos, Color color)
+    void debugHighlightCellBox(
+        Vector3Int gridPos,
+        Color color,
+        float duration = 3f
+    )
     {
         Vector3 center = grid.GetCellCenterWorld(gridPos);
-        Debug.Log($"highlight cell, worldPos: {center}");
         float halfWidth = grid.cellSize.x / 2f;
         float halfDepth = grid.cellSize.z / 2f;
         float y = 0.1f;
@@ -244,9 +241,9 @@ public class GridPlane : MonoBehaviour
         Vector3 tr = center + new Vector3(halfWidth, y, halfDepth); // top-right
         Vector3 tl = center + new Vector3(-halfWidth, y, halfDepth); // top-left
 
-        Debug.DrawLine(bl, br, color, Time.fixedDeltaTime);
-        Debug.DrawLine(br, tr, color, Time.fixedDeltaTime);
-        Debug.DrawLine(tr, tl, color, Time.fixedDeltaTime);
-        Debug.DrawLine(tl, bl, color, Time.fixedDeltaTime);
+        Debug.DrawLine(bl, br, color, duration);
+        Debug.DrawLine(br, tr, color, duration);
+        Debug.DrawLine(tr, tl, color, duration);
+        Debug.DrawLine(tl, bl, color, duration);
     }
 }

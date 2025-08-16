@@ -23,6 +23,19 @@ public class Entity : MonoBehaviour
     // Possible fighting component of this entity, does *not* need to exist.
     public Fighting fighting;
 
+    void Awake()
+    {
+        selectCollider = GetComponent<Collider>();
+        animator = GetComponent<Animator>();
+
+        // Warning: Does *not* need to exist for an Entity.
+        health = GetComponent<Health>();
+        // Warning: Does *not* need to exist for an Entity.
+        moving = GetComponent<Moving>();
+        // Warning: Does *not* need to exist for an Entity.
+        fighting = GetComponent<Fighting>();
+    }
+
     void Start()
     {
         if (entityData.Actor == EntityActor.player)
@@ -33,15 +46,6 @@ public class Entity : MonoBehaviour
         {
             EnemyController.singleton.Add(this);
         }
-        selectCollider = GetComponent<Collider>();
-        animator = GetComponent<Animator>();
-
-        // Warning: Does *not* need to exist for an Entity.
-        health = GetComponent<Health>();
-        // Warning: Does *not* need to exist for an Entity.
-        moving = GetComponent<Moving>();
-        // Warning: Does *not* need to exist for an Entity.
-        fighting = GetComponent<Fighting>();
     }
 
     /// <summary>
