@@ -75,30 +75,8 @@ public class EntityController : MonoBehaviour
 
     void handleMouseRightClick()
     {
-        if (Input.GetMouseButtonDown(1))
-        {
-            if (selection.Count > 0)
-            {
-                Debug.Log($"Selection > 0, moving...");
-                Game.GetHit().ifJust(moveSelectedEntities);
-            }
-        }
-    }
-
-    Vector3 getFormationOffset(
-        int formationSize,
-        int indexInSelection,
-        // TODO: Update formation for unit size.
-        Vector2 unitSize
-    )
-    {
-        int row = indexInSelection / formationSize;
-        int col = indexInSelection % formationSize;
-
-        Vector3 formationCellSize = GridPlane.singleton.cellSize;
-        float offsetX = (col - (formationSize - 1) / 2f) * formationCellSize.x;
-        float offsetZ = (row - (formationSize - 1) / 2f) * formationCellSize.z;
-        return new Vector3(offsetX, 0, offsetZ);
+        if (Input.GetMouseButtonDown(1) && selection.Count > 0)
+            Game.GetHit().ifJust(moveSelectedEntities);
     }
 
     void moveSelectedEntities(Vector3 hit)
@@ -118,7 +96,6 @@ public class EntityController : MonoBehaviour
             movingSelection[movingSelectionIndex++] = ent.moving;
         }
 
-        Debug.Log($"Actual moving entities: {movingSelectionIndex}");
         // We have no actual "moving" entities selected, abort mission!
         if (movingSelectionIndex == 0)
             return;
@@ -126,19 +103,35 @@ public class EntityController : MonoBehaviour
         moveSelectionInFormation(hit, movingSelection);
     }
 
-    void moveSelectionInFormation(Vector3 hit, Moving[] movingSelection)
+    Vector3 getFormationOffset(
+        int formationSize,
+        int indexInSelection,
+        // TODO: Update formation for unit size.
+        Vector2 unitSize
+    )
     {
-        Vector3[] destinations = new Vector3[movingSelection.Length];
-        int formationSize = Mathf.CeilToInt(Mathf.Sqrt(movingSelection.Length));
+        int row = indexInSelection / formationSize;
+        int col = indexInSelection % formationSize;
 
-        for (int i = 0; i < movingSelection.Length; i++)
+        Vector3 formationCellSize = GridPlane.singleton.cellSize;
+        float offsetX = (col - (formationSize - 1) / 2f) * formationCellSize.x;
+        float offsetZ = (row - (formationSize - 1) / 2f) * formationCellSize.z;
+        return new Vector3(offsetX, 0, offsetZ);
+    }
+
+    void moveSelectionInFormation(Vector3 hit, Moving[] selection)
+    {
+        Vector3[] destinations = new Vector3[selection.Length];
+        int formationSize = Mathf.CeilToInt(Mathf.Sqrt(selection.Length));
+
+        for (int i = 0; i < selection.Length; i++)
         {
             destinations[i] =
                 hit
                 + getFormationOffset(
                     formationSize,
                     i,
-                    movingSelection[i].entity.GetScreenBoundsRect().size
+                    selection[i].entity.GetScreenBoundsRect().size
                 );
         }
 
@@ -147,9 +140,9 @@ public class EntityController : MonoBehaviour
             destinations
         );
 
-        for (int i = 0; i < movingSelection.Length; i++)
+        for (int i = 0; i < selection.Length; i++)
         {
-            movingSelection[i].MoveWith(field, destinations[i]);
+            selection[i].MoveWith(field, destinations[i]);
         }
     }
 

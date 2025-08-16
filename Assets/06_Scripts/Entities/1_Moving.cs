@@ -11,7 +11,7 @@ public class Moving : MonoBehaviour
     Vector3? formationPosition;
     Quaternion? formationRotation;
 
-    Transform movingTarget;
+    MovingTransformer? movingTarget;
 
     Vector3Int gridPosition;
 
@@ -40,9 +40,9 @@ public class Moving : MonoBehaviour
 
     // Set a target transform to move towards, essentially following
     // that transform.
-    public void MoveTo(Transform target)
+    public void MoveTo(Transform target, float closeEnoughDistance)
     {
-        movingTarget = target;
+        movingTarget = new MovingTransformer(target, closeEnoughDistance);
         SetMoving(true);
     }
 
@@ -58,9 +58,9 @@ public class Moving : MonoBehaviour
     /// <summary> Move this entity according to its desired destination. </summary>
     void move()
     {
-        if (movingTarget != null)
+        if (movingTarget.HasValue)
         {
-            moveToTarget();
+            moveToTarget(movingTarget.Value);
             return;
         }
 
@@ -87,8 +87,14 @@ public class Moving : MonoBehaviour
         gridPosition = newGridPosition;
     }
 
+    /// <summary> Location is close enough according to movingData minimum. </summary>
     bool closeEnough(Vector3 location) =>
         Vector3.Distance(position, location) <= movingData.CloseEnoughDistance;
+
+    /// <summary> Close enough, given a distance, with fallback for minimum default. </summary>
+    bool closeEnough(Vector3 location, float closeEnoughDistance) =>
+        Vector3.Distance(position, location) <= closeEnoughDistance
+        || closeEnough(location);
 
     void moveIntoFormation(Vector3 formationPos)
     {
@@ -126,17 +132,22 @@ public class Moving : MonoBehaviour
             SetMoving(false);
     }
 
-    void moveToTarget()
+    void moveToTarget(MovingTransformer movingTarget)
     {
-        if (closeEnough(movingTarget.position))
+        if (
+            closeEnough(
+                movingTarget.transform.position,
+                movingTarget.closeEnoughDistance
+            )
+        )
         {
             SetMoving(false);
-            movingTarget = null;
+            this.movingTarget = null;
             return;
         }
 
-        transform.LookAt(movingTarget);
-        step(movingTarget.position);
+        transform.LookAt(movingTarget.transform.position);
+        step(movingTarget.transform.position);
     }
 
     void step(Vector3 location)
@@ -151,5 +162,17 @@ public class Moving : MonoBehaviour
     {
         if (entity.animator != null)
             entity.animator.SetBool("isMoving", moving);
+    }
+}
+
+struct MovingTransformer
+{
+    public readonly Transform transform;
+    public readonly float closeEnoughDistance;
+
+    public MovingTransformer(Transform transform, float closeEnoughDistance)
+    {
+        this.transform = transform;
+        this.closeEnoughDistance = closeEnoughDistance;
     }
 }

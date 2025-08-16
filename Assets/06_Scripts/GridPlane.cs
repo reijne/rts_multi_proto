@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using UnityEngine;
+using UnityEngine.InputSystem.Utilities;
 
 public enum CellType
 {
@@ -169,9 +170,9 @@ public class GridPlane : MonoBehaviour
         return result;
     }
 
-    public List<Entity> GetEntitiesInRange(Vector3 position, int range)
+    public ReadOnlyArray<Entity> GetEntitiesInRange(Vector3 position, int range)
     {
-        return getEntitiesInRange(grid.WorldToCell(position), range);
+        return getEntitiesInRange(grid.WorldToCell(position), range).ToArray();
     }
 
     void setDestination()

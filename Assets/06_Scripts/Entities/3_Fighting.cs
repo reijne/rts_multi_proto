@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using UnityEngine;
+using UnityEngine.InputSystem.Utilities;
 
 public class Fighting : MonoBehaviour
 {
@@ -10,6 +11,8 @@ public class Fighting : MonoBehaviour
     private float lastAttackTime = Mathf.NegativeInfinity;
     private Health currentTargetEnemy;
     private CellType targetFilter;
+
+    private bool drawGizmos = false;
 
     void Start()
     {
@@ -25,29 +28,34 @@ public class Fighting : MonoBehaviour
         moving = GetComponent<Moving>();
     }
 
-    // void OnDrawGizmos()
-    // {
-    //     // Debug: show attack range of the fighter.
-    //     Gizmos.color = Color.red;
-    //     Gizmos.DrawWireSphere(transform.position, fightingData.Ranges.attack);
+    void OnDrawGizmos()
+    {
+        if (!drawGizmos)
+            return;
 
-    //     // Debug: show vision of the fighter.
-    //     Gizmos.color = Color.blue;
-    //     Gizmos.DrawWireSphere(transform.position, fightingData.Ranges.vision);
-    // }
+        // Debug: show attack range of the fighter.
+        Gizmos.color = Color.red;
+        Gizmos.DrawWireSphere(transform.position, fightingData.Ranges.attack);
+
+        // Debug: show vision of the fighter.
+        Gizmos.color = Color.blue;
+        Gizmos.DrawWireSphere(transform.position, fightingData.Ranges.vision);
+    }
 
     private float nextCheckTime = 1.5f;
 
     void Update()
     {
-        if (!entity.Enabled || Time.time < nextCheckTime)
+        if (Input.GetKeyDown(KeyCode.G))
+            drawGizmos = !drawGizmos;
+
+        if (!entity.IsEnabled || Time.time < nextCheckTime)
             return;
 
         nextCheckTime = Time.time + UnityEngine.Random.Range(1f, 1.5f);
 
-        // TODO: Fix this mess lol, dont attack your teammates ey.
-        // updateClosestEnemy();
-        // attack();
+        updateClosestEnemy();
+        attack();
     }
 
     float distanceTo(Health target) =>
@@ -64,6 +72,7 @@ public class Fighting : MonoBehaviour
         // units chase em, instead of switching to the new closest one.
         if (
             currentTargetEnemy != null
+            // TODO: Perhaps decouple this component from Health somehow?
             && currentTargetEnemy.IsAlive
             && isWithinVision(currentTargetEnemy)
         )
@@ -76,7 +85,7 @@ public class Fighting : MonoBehaviour
 
     Health getClosetEnemyInSight()
     {
-        List<Entity> inRange = GridPlane.singleton.GetEntitiesInRange(
+        ReadOnlyArray<Entity> inRange = GridPlane.singleton.GetEntitiesInRange(
             transform.position,
             fightingData.Ranges.vision
         );
@@ -87,14 +96,11 @@ public class Fighting : MonoBehaviour
         for (int i = 0; i < inRange.Count; i++)
         {
             Health enemy = inRange[i].health;
-            if (
-                enemy != null
-                && distanceTo(enemy) < closestDistance
-                && enemy.IsAlive
-            )
-            {
+            if (enemy == null || !enemy.isValidTargetFor(entity))
+                continue;
+
+            if (distanceTo(enemy) < closestDistance)
                 closestEnemy = enemy;
-            }
         }
 
         return closestEnemy;
@@ -108,7 +114,13 @@ public class Fighting : MonoBehaviour
         if (distanceTo(currentTargetEnemy) > fightingData.Ranges.attack)
         {
             if (moving != null)
-                moving.MoveTo(currentTargetEnemy.transform);
+                moving.MoveTo(
+                    currentTargetEnemy.transform,
+                    // TODO: Make this into actual value instead of magic number?
+                    // Idea is we move slightly close than actual attack range so we have
+                    // time to attack in case someone moves.
+                    fightingData.Ranges.attack * 0.9f
+                );
             return;
         }
 
