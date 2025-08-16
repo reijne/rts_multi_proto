@@ -15,7 +15,7 @@ GameObject:
   - component: {fileID: -262251101853496682}
   - component: {fileID: 2145872775645366139}
   m_Layer: 0
-  m_Name: barracks_low_poly
+  m_Name: barracks
   m_TagString: Untagged
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
