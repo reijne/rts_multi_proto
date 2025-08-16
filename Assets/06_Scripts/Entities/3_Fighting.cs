@@ -46,8 +46,8 @@ public class Fighting : MonoBehaviour
 
     void Update()
     {
-        if (Input.GetKeyDown(KeyCode.G))
-            drawGizmos = !drawGizmos;
+        // if (Input.GetKeyDown(KeyCode.G))
+        //     drawGizmos = !drawGizmos;
 
         if (!entity.IsEnabled || Time.time < nextCheckTime)
             return;

@@ -55,59 +55,12 @@ public class Moving : MonoBehaviour
         if (!stepDirection.HasValue) // Nothing moved, will move, or wants to move.
             return;
 
-        stepTowards(stepDirection.Value);
+        transform.position +=
+            stepDirection.Value
+            * movingData.MovementSpeed
+            * Time.fixedDeltaTime;
 
         afterMove();
-    }
-
-    float getRandomCollision()
-    {
-        return Random.Range(
-            -GridPlane.singleton.GridSize.x / 2f,
-            GridPlane.singleton.GridSize.y / 2f
-        );
-    }
-
-    void stepTowards(Vector3 desiredDirection)
-    {
-        Vector3 newPosition =
-            position
-            + desiredDirection * movingData.MovementSpeed * Time.fixedDeltaTime;
-
-        Vector3Int newGridPosition = GridPlane.singleton.Grid.WorldToCell(
-            position
-        );
-        int occupants = GridPlane.singleton.GetCount(newGridPosition);
-
-        if (occupants == 0)
-        {
-            transform.LookAt(newPosition);
-            transform.position = newPosition;
-            Debug.Log($"No occupants, moving normally");
-            return;
-        }
-
-        Vector3 randomOffset = Vector3.zero;
-        for (int o = 0; o < occupants; o++)
-        {
-            randomOffset += new Vector3(
-                getRandomCollision(),
-                getRandomCollision(),
-                getRandomCollision()
-            );
-        }
-
-        Debug.Log($"Desired direction: {desiredDirection}");
-        Debug.Log($"    random offset: {randomOffset.normalized}");
-
-        Vector3 finalDirection = (
-            desiredDirection
-            + movingData.CollisionAvoidance * randomOffset.normalized
-        ).normalized;
-
-        transform.LookAt(finalDirection);
-        transform.position +=
-            finalDirection * movingData.MovementSpeed * Time.fixedDeltaTime;
     }
 
     /// <summary> Move this entity according to its desired destination. </summary>
@@ -125,15 +78,92 @@ public class Moving : MonoBehaviour
         return null;
     }
 
-    /// <summary> After moving, possibly update position in the grid. </summary>
+    // How tightly to pack within a cell (0.5 = edges; 0.4 keeps margin).
+    const float kInCellPack = 0.45f;
+
+    // Offset inside a single grid cell based on index & count
+    Vector3 IntraCellOffset(int count)
+    {
+        if (count <= 1)
+            return Vector3.zero;
+
+        // square-ish micro-formation
+        int cols = Mathf.CeilToInt(Mathf.Sqrt(count));
+        int rows = Mathf.CeilToInt((float)count / cols);
+
+        int index = Random.Range(0, count);
+
+        int row = index / cols;
+        int col = index % cols;
+
+        Vector3 cellSize = GridPlane.singleton.cellSize;
+        float stepX = cellSize.x * kInCellPack;
+        float stepZ = cellSize.z * kInCellPack;
+
+        // center the micro-grid in the cell
+        float originX = -(cols - 1) * 0.5f * stepX;
+        float originZ = -(rows - 1) * 0.5f * stepZ;
+
+        return new Vector3(originX + col * stepX, 0f, originZ + row * stepZ);
+    }
+
     void afterMove()
     {
-        Vector3Int newGridPosition = GridPlane.singleton.Grid.WorldToCell(
-            position
+        // where did we end up this step?
+        Vector3Int newGridPos = GridPlane.singleton.Grid.WorldToCell(position);
+
+        // update occupancy (early out if still same cell)
+        if (!GridPlane.singleton.Move(gridPosition, newGridPos, entity))
+            return;
+
+        gridPosition = newGridPos;
+
+        // micro-formation: offset within cell if multiple occupants
+        int count = GridPlane.singleton.GetCount(gridPosition);
+        if (count <= 1)
+            return;
+
+        int index = GridPlane.singleton.FindIndex(gridPosition, entity);
+        if (index < 0)
+            return; // shouldn't happen, but guard
+
+        Vector3 center = GridPlane.singleton.Grid.GetCellCenterWorld(
+            gridPosition
         );
-        GridPlane.singleton.Move(gridPosition, newGridPosition, entity);
-        gridPosition = newGridPosition;
+        // Vector3 target = center + IntraCellOffset(index, count);
+
+        // Snap (simplest). For smoother settle, replace with a lerp:
+        // transform.position = Vector3.Lerp(transform.position, target, 0.5f);
+        transform.position += IntraCellOffset(count);
     }
+
+    // /// <summary> After moving, possibly update position in the grid. </summary>
+    // void afterMove()
+    // {
+    //     Vector3Int gridPositionAfterStep = GridPlane.singleton.Grid.WorldToCell(
+    //         position
+    //     );
+    //     int countBefore = GridPlane.singleton.GetCount(gridPositionAfterStep);
+
+    //     if (
+    //         !GridPlane.singleton.Move(
+    //             gridPosition,
+    //             gridPositionAfterStep,
+    //             entity
+    //         )
+    //     )
+    //         return;
+
+    //     gridPosition = gridPositionAfterStep;
+    //     int countAfter = GridPlane.singleton.GetCount(gridPosition);
+
+    //     if (countAfter <= 1)
+    //     {
+    //         return;
+    //     }
+
+    //     transform.position +=
+    // }
 
     /// <summary> Location is close enough according to movingData minimum. </summary>
     bool closeEnough(Vector3 location) =>

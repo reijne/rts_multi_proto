@@ -137,6 +137,11 @@ public class GridPlane : MonoBehaviour
         return entities.Get(loc.x, loc.z).Count;
     }
 
+    public int FindIndex(Vector3Int loc, Entity ent)
+    {
+        return entities.Get(loc.x, loc.z).FindIndex(e => e == ent);
+    }
+
     public void Spawn(Vector3Int loc, Entity ent)
     {
         entities.Add(loc.x, loc.z, ent);
