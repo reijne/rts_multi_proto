@@ -72,7 +72,7 @@ public class Moving : MonoBehaviour
             * Time.fixedDeltaTime;
 
         updateGrid();
-        afterMove();
+        // afterMove();
     }
 
     /// <summary> Move this entity according to its desired destination. </summary>

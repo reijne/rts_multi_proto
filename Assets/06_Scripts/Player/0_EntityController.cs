@@ -82,6 +82,9 @@ public class EntityController : MonoBehaviour
 
     void moveSelectedEntities(Vector3 hit)
     {
+        Vector3 desiredLocation = GridPlane.singleton.Grid.GetCellCenterWorld(
+            GridPlane.singleton.Grid.WorldToCell(hit)
+        );
         int selectionCount = selection.Count;
         List<Moving> movingSelection = new List<Moving>();
 
@@ -92,7 +95,6 @@ public class EntityController : MonoBehaviour
             if (ent.moving == null)
                 continue;
 
-            Debug.Log($"adding moving to selection");
             movingSelection.Add(ent.moving);
         }
 
@@ -100,7 +102,7 @@ public class EntityController : MonoBehaviour
         if (movingSelection.Count == 0)
             return;
 
-        moveSelectionInFormation(hit, movingSelection);
+        moveSelectionInFormation(desiredLocation, movingSelection);
     }
 
     Vector3 getFormationOffset(
@@ -135,8 +137,19 @@ public class EntityController : MonoBehaviour
                 );
         }
 
+        // Sort the destinations so that furthest distance will come first.
+        // Vector3 middlePoint = movingSelection[movingSelection.Count / 2]
+        //     .transform
+        //     .position;
+        // Array.Sort(
+        //     destinations,
+        //     (a, b) =>
+        //         (b - middlePoint).sqrMagnitude.CompareTo(
+        //             (a - middlePoint).sqrMagnitude
+        //         )
+        // );
+
         PopulatedFlowField field = GridPlane.singleton.flowField.Create(
-            hit,
             destinations
         );
 

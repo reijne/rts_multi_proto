@@ -1,7 +1,9 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using UnityEditor;
 using UnityEngine;
+using UnityEngine.InputSystem.Utilities;
 
 static class Direction
 {
@@ -81,13 +83,16 @@ class Cell
     // only used for DebugDrawDirections.
     public Vector3 BestDirection;
 
+    // Best cost to move to the desired destination, used to determine direction.
+    public int closestDestinationId = -1;
+
     // Construct with a possible cost, to allow initialization with some occupancy.
     public Cell(int x, int z, Vector3 worldPosition, byte? cost)
     {
         this.x = x;
         this.z = z;
         WorldPosition = worldPosition;
-        this.cost = cost ?? 1;
+        this.cost = cost ?? 128;
         Cost = this.cost;
         BestCost = ushort.MaxValue;
         BestDirection = Vector3.zero;
@@ -100,6 +105,7 @@ class Cell
         Cost = cost; // Reset to initial cost on constructor.
         BestCost = ushort.MaxValue;
         BestDirection = Vector3.zero;
+        closestDestinationId = -1;
     }
 }
 
@@ -176,17 +182,6 @@ public class FlowField
 
     bool InBounds(int x, int z) => x >= 0 && z >= 0 && x < width && z < height;
 
-    void forEachCell(Action<Cell> action)
-    {
-        for (int x = 0; x < width; x++)
-        {
-            for (int z = 0; z < height; z++)
-            {
-                action(gridCells[x, z]);
-            }
-        }
-    }
-
     void reset()
     {
         for (int x = 0; x < width; x++)
@@ -194,24 +189,72 @@ public class FlowField
             gridCells[x, z].Reset();
     }
 
-    // Populate the cells with best costs, based on a destination.
-    void createIntegrationField(
-        Vector3Int destination, // Main destination.
-        IEnumerable<Vector3Int> destinations // Any other destinations that are acceptable.
+    void updateDiagonalCosts(
+        Vector3Int destination,
+        ReadOnlyArray<Vector3Int> destinations // Any other destinations that are acceptable.
     )
     {
+        bool isOrthoOrDiagonal(int x, int z, int destX, int destZ)
+        {
+            return x == destX
+                || z == destZ
+                || Mathf.Abs(x - destX) == Mathf.Abs(z - destZ);
+        }
+
+        for (int x = 0; x < width; x++)
+        for (int z = 0; z < height; z++)
+        {
+            if (isOrthoOrDiagonal(x, z, destination.x, destination.z))
+            {
+                gridCells[x, z].Cost -= 1;
+                continue;
+            }
+            foreach (Vector3Int dest in destinations)
+            {
+                if (isOrthoOrDiagonal(x, z, dest.x, dest.z))
+                {
+                    gridCells[x, z].Cost -= 1;
+                    break;
+                }
+            }
+        }
+    }
+
+    void updateOrthoCosts(ReadOnlyArray<Vector3Int> destinations)
+    {
+        for (int x = 0; x < width; x++)
+        {
+            foreach (Vector3Int dest in destinations)
+            {
+                gridCells[x, dest.z].Cost -= 1;
+            }
+        }
+        for (int z = 0; z < height; z++)
+        {
+            foreach (Vector3Int dest in destinations)
+            {
+                gridCells[dest.x, z].Cost -= 1;
+            }
+        }
+    }
+
+    // Populate the cells with best costs, based on a destination.
+    void createIntegrationField(
+        ReadOnlyArray<Vector3Int> destinations // Any other destinations that are acceptable.
+    )
+    {
+        // updateDiagonalCosts(destination, destinations);
+        // updateOrthoCosts(destinations);
+
         Queue<Cell> cellsToCheck = new Queue<Cell>();
 
-        Cell destinationCell = gridCells[destination.x, destination.z];
-        destinationCell.Cost = 0;
-        destinationCell.BestCost = 0;
-        cellsToCheck.Enqueue(destinationCell);
-
+        byte destinationIndex = 0;
         foreach (Vector3Int dest in destinations)
         {
             Cell destCell = gridCells[dest.x, dest.z];
             destCell.Cost = 0;
             destCell.BestCost = 0;
+            destCell.closestDestinationId = destinationIndex++;
             cellsToCheck.Enqueue(destCell);
         }
 
@@ -236,22 +279,39 @@ public class FlowField
                 if (newCost < neighbor.BestCost)
                 {
                     neighbor.BestCost = newCost;
+                    neighbor.closestDestinationId =
+                        current.closestDestinationId;
                     cellsToCheck.Enqueue(neighbor);
+                }
+                else if (newCost == neighbor.BestCost)
+                {
+                    // tie-breaker → prefer closer source, or random
+                    if (
+                        Vector3.Distance(
+                            neighbor.WorldPosition,
+                            destinations[current.closestDestinationId]
+                        )
+                        < Vector3.Distance(
+                            neighbor.WorldPosition,
+                            destinations[neighbor.closestDestinationId]
+                        )
+                    )
+                    {
+                        neighbor.closestDestinationId =
+                            current.closestDestinationId;
+                    }
                 }
             }
         }
     }
 
-    private PopulatedFlowField create(
-        Vector3Int destination,
-        IEnumerable<Vector3Int> destinations
-    )
+    private PopulatedFlowField create(ReadOnlyArray<Vector3Int> destinations)
     {
         if (shouldResetBeforeCreate)
             reset();
 
         // Populate all the bestCosts, so we can determine bestDirection from those.
-        createIntegrationField(destination, destinations);
+        createIntegrationField(destinations);
 
         // Create a mapping to extract only the bestDirection from cells.
         Vector3[,] directionMap = new Vector3[width, height];
@@ -275,7 +335,11 @@ public class FlowField
 
                 // If the neighbor is closer to the destination, update our new
                 // found best cost, and set the direction to it.
-                if (neighbor.BestCost < bestCost)
+                if (
+                    neighbor.closestDestinationId
+                        == current.closestDestinationId
+                    && neighbor.BestCost < bestCost
+                )
                 {
                     bestCost = neighbor.BestCost;
                     bestDirection = direction;
@@ -286,25 +350,28 @@ public class FlowField
             directionMap[x, z] = bestDirection.normalized;
         }
 
+        // Update all destinations to not move anywhere.
+        // foreach (Vector3Int dest in destinations)
+        // {
+        //     directionMap[dest.x, dest.z] = Vector3.zero;
+        //     gridCells[dest.x, dest.z].BestDirection = Vector3.zero;
+        // }
+
         shouldResetBeforeCreate = true;
 
         return new PopulatedFlowField(
             directionMap,
             worldPos => grid.WorldToCell(worldPos),
-            grid.GetCellCenterWorld(destination)
+            grid.GetCellCenterWorld(destinations[0])
         );
     }
 
     public PopulatedFlowField Create(Vector3 destination)
     {
-        return create(grid.WorldToCell(destination), EMPTY_V3INT);
+        return create(new Vector3Int[] { grid.WorldToCell(destination) });
     }
 
-    public PopulatedFlowField Create(
-        Vector3 destination,
-        // TODO: Ensure destinations are clamped into actual grid positions.
-        IEnumerable<Vector3> destinations
-    )
+    public PopulatedFlowField Create(ReadOnlyArray<Vector3> destinations)
     {
         Vector3Int[] gridDestinations = new Vector3Int[destinations.Count()];
         int i = 0;
@@ -312,7 +379,7 @@ public class FlowField
         {
             gridDestinations[i++] = grid.WorldToCell(dest);
         }
-        return create(grid.WorldToCell(destination), gridDestinations);
+        return create(gridDestinations);
     }
 
     public void DebugDrawDirections(
@@ -335,6 +402,47 @@ public class FlowField
                         * lineLength,
                 color
             );
+        }
+    }
+
+    GUIStyle _costStyle;
+
+    void EnsureCostStyle()
+    {
+        if (_costStyle != null)
+            return;
+        _costStyle = new GUIStyle(EditorStyles.boldLabel)
+        {
+            fontSize = 12,
+            alignment = TextAnchor.MiddleCenter,
+            normal = { textColor = Color.white },
+        };
+    }
+
+    /// <summary>Writes Cost / BestCost on each cell in the Scene view.</summary>
+    public void DebugDrawCostLabels(
+        bool showBestCost = false,
+        float yOffset = 0.05f
+    )
+    {
+        EnsureCostStyle();
+
+        for (int x = 0; x < width; x++)
+        for (int z = 0; z < height; z++)
+        {
+            var c = gridCells[x, z];
+            var pos = c.WorldPosition + Vector3.up * yOffset;
+
+            string best =
+                (c.BestCost == ushort.MaxValue) ? "∞" : c.BestCost.ToString();
+            string text = showBestCost ? $"{c.Cost}/{best}" : c.Cost.ToString();
+
+            // optional faint drop shadow for readability
+            Handles.color = new Color(0, 0, 0, 0.5f);
+            Handles.Label(pos + new Vector3(0.01f, 0, 0.01f), text, _costStyle);
+
+            Handles.color = Color.white;
+            Handles.Label(pos, text, _costStyle);
         }
     }
 }

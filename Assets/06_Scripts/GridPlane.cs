@@ -82,6 +82,7 @@ public class GridPlane : MonoBehaviour
     public GridEntities entities { get; private set; }
 
     private bool showFlowField = false;
+    private bool showCostField = false;
     private bool showOccupancy = false;
 
     void Awake()
@@ -97,7 +98,7 @@ public class GridPlane : MonoBehaviour
         setGridSize();
         entities = new GridEntities(GridSize);
         centerGridOnPlaneObject();
-        scaleTextureToMatchGridSize();
+        // scaleTextureToMatchGridSize();
     }
 
     void setGridSize()
@@ -196,6 +197,9 @@ public class GridPlane : MonoBehaviour
         if (Input.GetKeyDown(KeyCode.F))
             showFlowField = !showFlowField;
 
+        if (Input.GetKeyDown(KeyCode.C))
+            showCostField = !showCostField;
+
         if (Input.GetKeyDown(KeyCode.G))
             showOccupancy = !showOccupancy;
     }
@@ -207,6 +211,12 @@ public class GridPlane : MonoBehaviour
 
         if (showOccupancy)
             debugHighlightOccupancy();
+    }
+
+    private void OnDrawGizmos()
+    {
+        if (showCostField)
+            flowField?.DebugDrawCostLabels();
     }
 
     void debugHighlightOccupancy()
