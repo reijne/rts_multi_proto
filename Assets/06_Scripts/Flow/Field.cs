@@ -83,9 +83,6 @@ class Cell
     // only used for DebugDrawDirections.
     public Vector3 BestDirection;
 
-    // Best cost to move to the desired destination, used to determine direction.
-    public int closestDestinationId = -1;
-
     // Construct with a possible cost, to allow initialization with some occupancy.
     public Cell(int x, int z, Vector3 worldPosition, byte? cost)
     {
@@ -105,7 +102,6 @@ class Cell
         Cost = cost; // Reset to initial cost on constructor.
         BestCost = ushort.MaxValue;
         BestDirection = Vector3.zero;
-        closestDestinationId = -1;
     }
 }
 
@@ -180,7 +176,8 @@ public class FlowField
         }
     }
 
-    bool InBounds(int x, int z) => x >= 0 && z >= 0 && x < width && z < height;
+    bool InRange(int x, int z, Vector2Int min, Vector2Int max) =>
+        x >= min.x && z >= min.y && x < max.x && z < max.y;
 
     void reset()
     {
@@ -189,72 +186,20 @@ public class FlowField
             gridCells[x, z].Reset();
     }
 
-    void updateDiagonalCosts(
-        Vector3Int destination,
-        ReadOnlyArray<Vector3Int> destinations // Any other destinations that are acceptable.
-    )
-    {
-        bool isOrthoOrDiagonal(int x, int z, int destX, int destZ)
-        {
-            return x == destX
-                || z == destZ
-                || Mathf.Abs(x - destX) == Mathf.Abs(z - destZ);
-        }
-
-        for (int x = 0; x < width; x++)
-        for (int z = 0; z < height; z++)
-        {
-            if (isOrthoOrDiagonal(x, z, destination.x, destination.z))
-            {
-                gridCells[x, z].Cost -= 1;
-                continue;
-            }
-            foreach (Vector3Int dest in destinations)
-            {
-                if (isOrthoOrDiagonal(x, z, dest.x, dest.z))
-                {
-                    gridCells[x, z].Cost -= 1;
-                    break;
-                }
-            }
-        }
-    }
-
-    void updateOrthoCosts(ReadOnlyArray<Vector3Int> destinations)
-    {
-        for (int x = 0; x < width; x++)
-        {
-            foreach (Vector3Int dest in destinations)
-            {
-                gridCells[x, dest.z].Cost -= 1;
-            }
-        }
-        for (int z = 0; z < height; z++)
-        {
-            foreach (Vector3Int dest in destinations)
-            {
-                gridCells[dest.x, z].Cost -= 1;
-            }
-        }
-    }
-
     // Populate the cells with best costs, based on a destination.
     void createIntegrationField(
-        ReadOnlyArray<Vector3Int> destinations // Any other destinations that are acceptable.
+        ReadOnlyArray<Vector3Int> destinations,
+        Vector2Int min,
+        Vector2Int max
     )
     {
-        // updateDiagonalCosts(destination, destinations);
-        // updateOrthoCosts(destinations);
-
         Queue<Cell> cellsToCheck = new Queue<Cell>();
 
-        byte destinationIndex = 0;
         foreach (Vector3Int dest in destinations)
         {
             Cell destCell = gridCells[dest.x, dest.z];
             destCell.Cost = 0;
             destCell.BestCost = 0;
-            destCell.closestDestinationId = destinationIndex++;
             cellsToCheck.Enqueue(destCell);
         }
 
@@ -266,7 +211,7 @@ public class FlowField
                 int nx = current.x + Direction.Cardinals[n].x;
                 int nz = current.z + Direction.Cardinals[n].z;
 
-                if (!InBounds(nx, nz))
+                if (!InRange(nx, nz, min, max))
                     continue;
 
                 Cell neighbor = gridCells[nx, nz];
@@ -279,44 +224,28 @@ public class FlowField
                 if (newCost < neighbor.BestCost)
                 {
                     neighbor.BestCost = newCost;
-                    neighbor.closestDestinationId =
-                        current.closestDestinationId;
                     cellsToCheck.Enqueue(neighbor);
-                }
-                else if (newCost == neighbor.BestCost)
-                {
-                    // tie-breaker → prefer closer source, or random
-                    if (
-                        Vector3.Distance(
-                            neighbor.WorldPosition,
-                            destinations[current.closestDestinationId]
-                        )
-                        < Vector3.Distance(
-                            neighbor.WorldPosition,
-                            destinations[neighbor.closestDestinationId]
-                        )
-                    )
-                    {
-                        neighbor.closestDestinationId =
-                            current.closestDestinationId;
-                    }
                 }
             }
         }
     }
 
-    private PopulatedFlowField create(ReadOnlyArray<Vector3Int> destinations)
+    private PopulatedFlowField create(
+        ReadOnlyArray<Vector3Int> destinations,
+        Vector2Int min,
+        Vector2Int max
+    )
     {
         if (shouldResetBeforeCreate)
             reset();
 
         // Populate all the bestCosts, so we can determine bestDirection from those.
-        createIntegrationField(destinations);
+        createIntegrationField(destinations, min, max);
 
         // Create a mapping to extract only the bestDirection from cells.
-        Vector3[,] directionMap = new Vector3[width, height];
-        for (int x = 0; x < width; x++)
-        for (int z = 0; z < height; z++)
+        Vector3[,] directionMap = new Vector3[max.x, max.y];
+        for (int x = min.x; x < max.x; x++)
+        for (int z = min.y; z < max.y; z++)
         {
             Cell current = gridCells[x, z];
             ushort bestCost = current.BestCost;
@@ -328,18 +257,14 @@ public class FlowField
                 int nx = current.x + direction.x;
                 int nz = current.z + direction.z;
 
-                if (!InBounds(nx, nz))
+                if (!InRange(nx, nz, min, max))
                     continue;
 
                 Cell neighbor = gridCells[nx, nz];
 
                 // If the neighbor is closer to the destination, update our new
                 // found best cost, and set the direction to it.
-                if (
-                    neighbor.closestDestinationId
-                        == current.closestDestinationId
-                    && neighbor.BestCost < bestCost
-                )
+                if (neighbor.BestCost < bestCost)
                 {
                     bestCost = neighbor.BestCost;
                     bestDirection = direction;
@@ -349,13 +274,6 @@ public class FlowField
             current.BestDirection = bestDirection.normalized;
             directionMap[x, z] = bestDirection.normalized;
         }
-
-        // Update all destinations to not move anywhere.
-        // foreach (Vector3Int dest in destinations)
-        // {
-        //     directionMap[dest.x, dest.z] = Vector3.zero;
-        //     gridCells[dest.x, dest.z].BestDirection = Vector3.zero;
-        // }
 
         shouldResetBeforeCreate = true;
 
@@ -368,7 +286,24 @@ public class FlowField
 
     public PopulatedFlowField Create(Vector3 destination)
     {
-        return create(new Vector3Int[] { grid.WorldToCell(destination) });
+        return create(
+            new Vector3Int[] { grid.WorldToCell(destination) },
+            new Vector2Int(0, 0),
+            new Vector2Int(width, height)
+        );
+    }
+
+    public PopulatedFlowField Create(
+        Vector3 destination,
+        Vector2Int min,
+        Vector2Int max
+    )
+    {
+        return create(
+            new Vector3Int[] { grid.WorldToCell(destination) },
+            new Vector2Int(Mathf.Max(0, min.x), Mathf.Max(0, min.y)),
+            new Vector2Int(Mathf.Min(width, max.x), Mathf.Min(height, max.y))
+        );
     }
 
     public PopulatedFlowField Create(ReadOnlyArray<Vector3> destinations)
@@ -379,7 +314,11 @@ public class FlowField
         {
             gridDestinations[i++] = grid.WorldToCell(dest);
         }
-        return create(gridDestinations);
+        return create(
+            gridDestinations,
+            new Vector2Int(0, 0),
+            new Vector2Int(width, height)
+        );
     }
 
     public void DebugDrawDirections(

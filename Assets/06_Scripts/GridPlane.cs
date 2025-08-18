@@ -181,7 +181,7 @@ public class GridPlane : MonoBehaviour
         Game.GetHit()
             .ifJust(hit =>
             {
-                debugHighlightCellBox(grid.WorldToCell(hit), Color.red);
+                DebugHighlightCellBox(grid.WorldToCell(hit), Color.red);
                 // TODO: Store the created flow field for later use in case
                 // we want to move to the same location?
                 // Might not work when we have a different cost field hmmmm.
@@ -226,7 +226,7 @@ public class GridPlane : MonoBehaviour
         {
             List<Entity> occupants = entities.Get(x, z);
             if (occupants.Count > 0)
-                debugHighlightCellBox(
+                DebugHighlightCellBox(
                     new Vector3Int(x, 0, z),
                     Color.green,
                     Time.fixedDeltaTime
@@ -235,7 +235,7 @@ public class GridPlane : MonoBehaviour
     }
 
     // Draw the outline of a cell using Debug.DrawLine, only in Editor.
-    void debugHighlightCellBox(
+    public void DebugHighlightCellBox(
         Vector3Int gridPos,
         Color color,
         float duration = 3f

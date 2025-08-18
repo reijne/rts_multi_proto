@@ -107,9 +107,9 @@ public class EntityController : MonoBehaviour
 
     Vector3 getFormationOffset(
         int formationSize,
-        int indexInSelection,
-        // TODO: Update formation for unit size.
-        Vector2 unitSize
+        int indexInSelection
+    // TODO: Update formation for unit size.
+    // Vector2 unitSize
     )
     {
         int row = indexInSelection / formationSize;
@@ -126,36 +126,34 @@ public class EntityController : MonoBehaviour
         Vector3[] destinations = new Vector3[movingSelection.Count];
         int formationSize = Mathf.CeilToInt(Mathf.Sqrt(movingSelection.Count));
 
+        Vector3 max =
+            hit + getFormationOffset(formationSize, movingSelection.Count - 1);
+
+        Vector3 min = hit + getFormationOffset(formationSize, 0);
         for (int i = 0; i < movingSelection.Count; i++)
         {
-            destinations[i] =
-                hit
-                + getFormationOffset(
-                    formationSize,
-                    i,
-                    movingSelection[i].entity.GetScreenBoundsRect().size
-                );
+            destinations[i] = hit + getFormationOffset(formationSize, i);
+            max = Vector3.Max(max, movingSelection[i].transform.position);
+            min = Vector3.Min(min, movingSelection[i].transform.position);
         }
 
-        // Sort the destinations so that furthest distance will come first.
-        // Vector3 middlePoint = movingSelection[movingSelection.Count / 2]
-        //     .transform
-        //     .position;
-        // Array.Sort(
-        //     destinations,
-        //     (a, b) =>
-        //         (b - middlePoint).sqrMagnitude.CompareTo(
-        //             (a - middlePoint).sqrMagnitude
-        //         )
-        // );
+        Vector3Int maxInt = GridPlane.singleton.Grid.WorldToCell(max);
+        Vector3Int minInt = GridPlane.singleton.Grid.WorldToCell(min);
 
-        PopulatedFlowField field = GridPlane.singleton.flowField.Create(
-            destinations
-        );
+        GridPlane.singleton.DebugHighlightCellBox(maxInt, Color.white);
+        GridPlane.singleton.DebugHighlightCellBox(minInt, Color.white);
 
         for (int i = 0; i < movingSelection.Count; i++)
         {
-            movingSelection[i].MoveWith(field, destinations[i]);
+            movingSelection[i]
+                .MoveWith(
+                    GridPlane.singleton.flowField.Create(
+                        destinations[i],
+                        new Vector2Int(minInt.x - 1, minInt.z - 1),
+                        new Vector2Int(maxInt.x + 1, maxInt.z + 1)
+                    ),
+                    destinations[i]
+                );
         }
     }
 
