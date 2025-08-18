@@ -1,7 +1,6 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
-using UnityEditor;
 using UnityEngine;
 
 static class Direction
@@ -164,16 +163,14 @@ public class FlowField
 
         gridCells = new Cell[size.x, size.y];
         for (int x = 0; x < size.x; x++)
+        for (int z = 0; z < size.y; z++)
         {
-            for (int z = 0; z < size.y; z++)
-            {
-                gridCells[x, z] = new Cell(
-                    x,
-                    z,
-                    grid.GetCellCenterWorld(new Vector3Int(x, 0, z)),
-                    null
-                );
-            }
+            gridCells[x, z] = new Cell(
+                x,
+                z,
+                grid.GetCellCenterWorld(new Vector3Int(x, 0, z)),
+                null
+            );
         }
     }
 
@@ -339,87 +336,5 @@ public class FlowField
                 color
             );
         }
-    }
-
-    void InitDebugResources()
-    {
-        if (debugMaterial == null)
-        {
-            debugMaterial = new Material(
-                Shader.Find("Custom/UnlitInstanceColor")
-            );
-            debugMaterial.enableInstancing = true;
-        }
-
-        if (cubeMesh == null)
-            cubeMesh = Resources.GetBuiltinResource<Mesh>("Cube.fbx");
-    }
-
-    public void DebugDrawGrid()
-    {
-        InitDebugResources();
-
-        // 1. Find max cost for normalization
-        ushort maxCost = 0;
-        forEachCell(cell =>
-        {
-            if (cell.BestCost != ushort.MaxValue)
-                maxCost = (ushort)Mathf.Max(maxCost, cell.BestCost);
-        });
-
-        // 2. Prepare lists for batching
-        List<Matrix4x4> matrices = new List<Matrix4x4>();
-        List<Vector4> colors = new List<Vector4>();
-
-        forEachCell(cell =>
-        {
-            float normalized =
-                (cell.BestCost == ushort.MaxValue)
-                    ? 1f
-                    : (cell.BestCost / (float)maxCost);
-
-            Color rainbow = Color.HSVToRGB(1f - normalized, 1f, 1f);
-            // Green at destination → Red at farthest
-            Color gradient = Color.Lerp(Color.green, Color.red, normalized);
-
-            matrices.Add(
-                Matrix4x4.TRS(
-                    cell.WorldPosition,
-                    Quaternion.identity,
-                    grid.cellSize * 0.95f
-                )
-            );
-            colors.Add(gradient);
-
-            // 3. Draw in batches of 1023
-            if (matrices.Count == 1023)
-            {
-                DrawBatch(matrices, colors);
-                matrices.Clear();
-                colors.Clear();
-            }
-        });
-
-        if (matrices.Count > 0)
-            DrawBatch(matrices, colors);
-    }
-
-    void DrawBatch(List<Matrix4x4> matrices, List<Vector4> colors)
-    {
-        var props = new MaterialPropertyBlock();
-        props.SetVectorArray("_Color", colors);
-        Graphics.DrawMeshInstanced(
-            cubeMesh,
-            0,
-            debugMaterial,
-            matrices,
-            props,
-            UnityEngine.Rendering.ShadowCastingMode.Off,
-            false,
-            0,
-            null,
-            UnityEngine.Rendering.LightProbeUsage.Off,
-            null
-        );
     }
 }
