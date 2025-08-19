@@ -1,17 +1,15 @@
-using System.Collections.Generic;
-using Unity.VisualScripting;
 using UnityEngine;
+using UnityEngine.AI;
 
 public class Moving : MonoBehaviour
 {
     public MovingData movingData;
+    public GameObject moveIndicatorPrefab;
+    public GameObject moveIndicator;
 
     public Entity entity { get; private set; }
-    private Vector3 position => transform.position;
 
-    PopulatedFlowField fieldToFormation;
-    Vector3? formationPosition;
-    Quaternion? formationRotation;
+    NavMeshAgent navMeshAgent;
 
     MovingTarget? movingTarget;
 
@@ -20,27 +18,57 @@ public class Moving : MonoBehaviour
     void Awake()
     {
         entity = GetComponent<Entity>();
+        entity.OnSelected += () => setMoveTargetActive(true);
+        entity.OnDeselected += () => setMoveTargetActive(false);
+        entity.onDisable += onDisabled;
+        navMeshAgent = gameObject.AddComponent<NavMeshAgent>();
+        navMeshAgent.speed = movingData.MovementSpeed;
+        navMeshAgent.acceleration = movingData.Acceleration;
+        navMeshAgent.angularSpeed = movingData.AngularSpeed;
+    }
+
+    void setMoveTargetActive(bool active)
+    {
+        if (moveIndicator != null)
+            moveIndicator.SetActive(active && entity.IsEnabled);
+    }
+
+    void onDisabled()
+    {
+        setMoveTargetActive(false);
+        movingTarget = null;
+        navMeshAgent.isStopped = true;
     }
 
     void Start()
     {
-        gridPosition = GridPlane.singleton.Grid.WorldToCell(position);
+        gridPosition = GridPlane.singleton.Grid.WorldToCell(transform.position);
         GridPlane.singleton.Spawn(gridPosition, entity);
     }
 
-    public void MoveWith(PopulatedFlowField field)
+    public void MoveTo(Vector3 dest)
     {
-        fieldToFormation = field;
-        SetMoving(true);
+        if (!entity.IsEnabled)
+            return;
+
+        navMeshAgent.SetDestination(dest);
+        navMeshAgent.stoppingDistance = movingData.StoppingDistance;
+        UpdateMoveIndicator(dest);
     }
 
-    public void MoveWith(PopulatedFlowField field, Vector3 withFormation)
+    void UpdateMoveIndicator(Vector3 dest)
     {
-        fieldToFormation = field;
-        formationPosition = withFormation;
-        transform.LookAt(field.destination);
-        formationRotation = transform.rotation;
-        SetMoving(true);
+        if (moveIndicator == null)
+        {
+            if (moveIndicatorPrefab != null)
+                moveIndicator = Instantiate(
+                    moveIndicatorPrefab,
+                    dest,
+                    Quaternion.identity
+                );
+        }
+        else
+            moveIndicator.transform.position = dest;
     }
 
     // Set a target transform to move towards, essentially following
@@ -48,13 +76,7 @@ public class Moving : MonoBehaviour
     public void MoveTo(Transform target, float closeEnoughDistance)
     {
         movingTarget = new MovingTarget(target, closeEnoughDistance);
-        SetMoving(true);
-    }
-
-    public void Nudge(Vector3 direction)
-    {
-        transform.position += movingData.CollisionAvoidance * direction;
-        updateGrid();
+        navMeshAgent.stoppingDistance = closeEnoughDistance;
     }
 
     void FixedUpdate()
@@ -62,128 +84,27 @@ public class Moving : MonoBehaviour
         if (!entity.IsEnabled)
             return;
 
-        Vector3? stepDirection = getDesiredStep();
-        if (!stepDirection.HasValue) // Nothing moved, will move, or wants to move.
-            return;
+        navMeshAgent.avoidancePriority = movingData.CollisionAvoidance;
 
-        transform.position +=
-            stepDirection.Value
-            * movingData.MovementSpeed
-            * Time.fixedDeltaTime;
+        if (movingTarget.HasValue && movingTarget.Value.transform != null)
+        {
+            navMeshAgent.SetDestination(movingTarget.Value.transform.position);
+            UpdateMoveIndicator(movingTarget.Value.transform.position);
+        }
+
+        SetMoving(navMeshAgent.velocity.magnitude > 0);
 
         updateGrid();
-        // afterMove();
-    }
-
-    /// <summary> Move this entity according to its desired destination. </summary>
-    Vector3? getDesiredStep()
-    {
-        if (movingTarget.HasValue)
-            return moveToTarget(movingTarget.Value);
-
-        if (fieldToFormation != null)
-            return moveWithField();
-
-        if (formationPosition.HasValue)
-            return moveIntoFormation(formationPosition.Value);
-
-        return null;
     }
 
     void updateGrid()
     {
-        Vector3Int newGridPos = GridPlane.singleton.Grid.WorldToCell(position);
+        Vector3Int newGridPos = GridPlane.singleton.Grid.WorldToCell(
+            transform.position
+        );
 
         if (GridPlane.singleton.Move(gridPosition, newGridPos, entity))
             gridPosition = newGridPos;
-    }
-
-    /// <summary> After moving, possibly update position in the grid. </summary>
-    void afterMove()
-    {
-        List<Entity> occupants = GridPlane.singleton.entities.Get(
-            gridPosition.x,
-            gridPosition.z
-        );
-
-        foreach (Entity o in occupants)
-        {
-            Moving mov = o.moving;
-            if (mov == null)
-                continue;
-
-            Vector3 direction = mov.position - position;
-            direction *= direction.sqrMagnitude;
-            direction.y = 0;
-
-            mov.Nudge(direction);
-        }
-    }
-
-    /// <summary> Location is close enough according to movingData minimum. </summary>
-    bool closeEnough(Vector3 location) =>
-        Vector3.Distance(position, location) <= movingData.CloseEnoughDistance;
-
-    /// <summary> Close enough, given a distance, with fallback for minimum default. </summary>
-    bool closeEnough(Vector3 location, float closeEnoughDistance) =>
-        Vector3.Distance(position, location) <= closeEnoughDistance
-        || closeEnough(location);
-
-    Vector3? moveIntoFormation(Vector3 formationPos)
-    {
-        if (closeEnough(formationPos))
-        {
-            SetMoving(false);
-            formationPosition = null;
-            if (formationRotation.HasValue)
-            {
-                transform.rotation = formationRotation.Value;
-                formationRotation = null;
-            }
-            return null;
-        }
-
-        return getStep(formationPos);
-    }
-
-    Vector3? moveWithField()
-    {
-        Vector3 direction = fieldToFormation.GetDirection(transform.position);
-
-        // We still have to walk along the field to a place that counts as destination.
-        if (direction != Vector3.zero)
-            return direction;
-
-        fieldToFormation = null;
-
-        if (!formationPosition.HasValue)
-            SetMoving(false);
-
-        return null;
-    }
-
-    Vector3? moveToTarget(MovingTarget movingTarget)
-    {
-        if (
-            closeEnough(
-                movingTarget.transform.position,
-                movingTarget.closeEnoughDistance
-            )
-        )
-        {
-            SetMoving(false);
-            this.movingTarget = null;
-            return null;
-        }
-
-        // transform.LookAt(movingTarget.transform.position);
-        return getStep(movingTarget.transform.position);
-    }
-
-    Vector3 getStep(Vector3 location)
-    {
-        Vector3 direction = (location - position).normalized;
-        return direction;
     }
 
     // Set the animator `isMoving` param, enabling the Run animation.

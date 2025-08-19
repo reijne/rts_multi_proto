@@ -16,6 +16,7 @@ public class EntityController : MonoBehaviour
     // Private attributes that are guaranteed to exist.
     private List<Entity> selection = new List<Entity>();
 
+    float lastClick;
     Vector2? mouseDown;
     Vector2? mouseUp;
 
@@ -43,6 +44,8 @@ public class EntityController : MonoBehaviour
 
         singleton = this;
         DontDestroyOnLoad(gameObject);
+
+        lastClick = Time.time - 1;
     }
 
     void Update()
@@ -61,17 +64,31 @@ public class EntityController : MonoBehaviour
         captureMousePositions();
         handleMouseRightClick();
 
-        // TODO: Select on double click.
         performMouseSelection();
     }
 
     void captureMousePositions()
     {
+        // Double click.
+        if (Input.GetMouseButtonDown(0) && Time.time - lastClick < 0.5f)
+        {
+            // TODO: Add a filter for the clicked upon unit, selecting only that type.
+            mouseDown = new Vector2(0, 0);
+            mouseUp = new Vector2(Screen.width, Screen.height);
+            return;
+        }
+
         if (Input.GetMouseButtonDown(0))
+        {
+            mouseUp = null;
             mouseDown = Input.mousePosition;
+            lastClick = Time.time;
+        }
 
         if (Input.GetMouseButtonUp(0))
+        {
             mouseUp = Input.mousePosition;
+        }
     }
 
     void handleMouseRightClick()
@@ -106,54 +123,39 @@ public class EntityController : MonoBehaviour
     }
 
     Vector3 getFormationOffset(
-        int formationSize,
-        int indexInSelection
-    // TODO: Update formation for unit size.
-    // Vector2 unitSize
+        int formationRadius,
+        int indexInSelection,
+        float unitSize
     )
     {
-        int row = indexInSelection / formationSize;
-        int col = indexInSelection % formationSize;
+        int row = indexInSelection / formationRadius;
+        int col = indexInSelection % formationRadius;
 
-        Vector3 formationCellSize = GridPlane.singleton.cellSize;
-        float offsetX = (col - (formationSize - 1) / 2f) * formationCellSize.x;
-        float offsetZ = (row - (formationSize - 1) / 2f) * formationCellSize.z;
+        float offsetX = (col - (formationRadius - 1) / 2f) * unitSize;
+        float offsetZ = (row - (formationRadius - 1) / 2f) * unitSize;
         return new Vector3(offsetX, 0, offsetZ);
     }
 
     void moveSelectionInFormation(Vector3 hit, List<Moving> movingSelection)
     {
         Vector3[] destinations = new Vector3[movingSelection.Count];
-        int formationSize = Mathf.CeilToInt(Mathf.Sqrt(movingSelection.Count));
+        int formationRadius = Mathf.CeilToInt(
+            Mathf.Sqrt(movingSelection.Count)
+        );
 
-        Vector3 max =
-            hit + getFormationOffset(formationSize, movingSelection.Count - 1);
+        // TODO: use unitSize _per_ unit to allow mixed formations.
+        Vector3 size = movingSelection[0].entity.collider.size;
+        float unitSize = 1.5f * Mathf.Max(size.x, size.z);
 
-        Vector3 min = hit + getFormationOffset(formationSize, 0);
         for (int i = 0; i < movingSelection.Count; i++)
         {
-            destinations[i] = hit + getFormationOffset(formationSize, i);
-            max = Vector3.Max(max, movingSelection[i].transform.position);
-            min = Vector3.Min(min, movingSelection[i].transform.position);
+            destinations[i] =
+                hit + getFormationOffset(formationRadius, i, unitSize);
         }
 
-        Vector3Int maxInt = GridPlane.singleton.Grid.WorldToCell(max);
-        Vector3Int minInt = GridPlane.singleton.Grid.WorldToCell(min);
-
-        GridPlane.singleton.DebugHighlightCellBox(maxInt, Color.white);
-        GridPlane.singleton.DebugHighlightCellBox(minInt, Color.white);
-
         for (int i = 0; i < movingSelection.Count; i++)
         {
-            movingSelection[i]
-                .MoveWith(
-                    GridPlane.singleton.flowField.Create(
-                        destinations[i],
-                        new Vector2Int(minInt.x - 1, minInt.z - 1),
-                        new Vector2Int(maxInt.x + 1, maxInt.z + 1)
-                    ),
-                    destinations[i]
-                );
+            movingSelection[i].MoveTo(destinations[i]);
         }
     }
 
@@ -210,9 +212,12 @@ public class EntityController : MonoBehaviour
             max.y - min.y
         );
 
-        deselect();
+        if (!Input.GetKey(KeyCode.LeftShift))
+        {
+            deselect();
+            selection.Clear();
+        }
 
-        selection.Clear();
         for (int i = 0; i < entities.Count; i++)
         {
             Entity entity = entities[i];

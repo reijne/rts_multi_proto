@@ -13,4 +13,7 @@ MonoBehaviour:
   m_Name: 1_MovingDataGrunt
   m_EditorClassIdentifier: 
   movementSpeed: 5
-  closeEnoughDistance: 0.1
+  acceleration: 100
+  angularSpeed: 180
+  stoppingDistance: 0.2
+  collisionAvoidance: 50

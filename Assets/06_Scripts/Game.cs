@@ -122,8 +122,13 @@ public class Game : MonoBehaviour
 
     public static Maybe<Vector3> GetHit()
     {
+        return GetHit(Input.mousePosition);
+    }
+
+    public static Maybe<Vector3> GetHit(Vector3 mousePosition)
+    {
         RaycastHit hit;
-        Ray ray = Camera.main.ScreenPointToRay(Input.mousePosition);
+        Ray ray = Camera.main.ScreenPointToRay(mousePosition);
 
         if (Physics.Raycast(ray, out hit, 100f, Layers.Environment))
         {

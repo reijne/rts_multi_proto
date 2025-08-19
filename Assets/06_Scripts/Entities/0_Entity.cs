@@ -11,11 +11,14 @@ public class Entity : MonoBehaviour
     public event Action OnDeselected;
     private bool isSelected = false;
     public bool IsSelected => isSelected;
-    private Collider selectCollider;
+    public new BoxCollider collider { get; private set; }
+
+    // Used to determine whether this entity can still perform actions.
+    public bool IsEnabled = true;
+    public event Action onDisable;
 
     // Possible health of this entity, does *not* need to exist,
     public Health health;
-    public bool IsEnabled => health == null || health.IsAlive;
 
     // Possible moving component of this entity, does *not* need to exist.
     public Moving moving;
@@ -25,7 +28,7 @@ public class Entity : MonoBehaviour
 
     void Awake()
     {
-        selectCollider = GetComponent<Collider>();
+        collider = GetComponent<BoxCollider>();
         animator = GetComponent<Animator>();
 
         // Warning: Does *not* need to exist for an Entity.
@@ -56,7 +59,7 @@ public class Entity : MonoBehaviour
     /// </summary>
     public Rect GetScreenBoundsRect()
     {
-        Bounds bounds = selectCollider.bounds;
+        Bounds bounds = collider.bounds;
 
         // Convert the 8 corners of the bounding box to screen space
         Vector3[] corners = new Vector3[8];

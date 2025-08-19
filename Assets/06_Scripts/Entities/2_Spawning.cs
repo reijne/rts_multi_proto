@@ -13,8 +13,6 @@ public class Spawning : MonoBehaviour
     // Private attributes that are guaranteed to exist.
     private Entity entity;
 
-    // Location where units will move towards upon spawning.
-    PopulatedFlowField fieldToSpawn;
     float timeOfLastSpawn;
     int UnitQueue = 0;
 
@@ -55,13 +53,7 @@ public class Spawning : MonoBehaviour
                 .ifJust(hit =>
                 {
                     spawnPointIndicator.transform.position = hit;
-                    updateSpawnPoint(hit);
                 });
-    }
-
-    void updateSpawnPoint(Vector3 hit)
-    {
-        fieldToSpawn = GridPlane.singleton.flowField.Create(hit);
     }
 
     public void AddUnitToQueue(int amount)
@@ -127,7 +119,7 @@ public class Spawning : MonoBehaviour
                 direction = transform.forward;
 
             // Half extents of the building in world space
-            Vector3 halfExtents = transform.localScale / 2f;
+            Vector3 halfExtents = entity.collider.bounds.size / 1.8f;
 
             // Build the offset: only use X and Z, match Y with current position
             Vector3 spawnOffset = new Vector3(
@@ -139,8 +131,6 @@ public class Spawning : MonoBehaviour
             // Final spawn point is the building position + offset
             Vector3 instantiatePosition = transform.position + spawnOffset;
 
-            spawnPointIndicator.transform.position = instantiatePosition;
-
             // Match Y with the building's base Y
             instantiatePosition.y = 0;
 
@@ -150,7 +140,7 @@ public class Spawning : MonoBehaviour
                 Quaternion.identity
             );
             Moving movEnt = ent.GetComponent<Moving>();
-            movEnt.MoveWith(fieldToSpawn);
+            movEnt.MoveTo(spawnPointIndicator.transform.position);
         }
     }
 }

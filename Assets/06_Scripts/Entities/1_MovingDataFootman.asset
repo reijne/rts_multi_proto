@@ -13,5 +13,7 @@ MonoBehaviour:
   m_Name: 1_MovingDataFootman
   m_EditorClassIdentifier: 
   movementSpeed: 5
-  closeEnoughDistance: 0.1
-  collisionAvoidance: 0.01
+  acceleration: 200
+  angularSpeed: 360
+  stoppingDistance: 0.1
+  collisionAvoidance: 50

@@ -73,7 +73,7 @@ public class Fighting : MonoBehaviour
         if (
             currentTargetEnemy != null
             // TODO: Perhaps decouple this component from Health somehow?
-            && currentTargetEnemy.IsAlive
+            && currentTargetEnemy.entity.IsEnabled
             && isWithinVision(currentTargetEnemy)
         )
         {

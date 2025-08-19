@@ -3,12 +3,9 @@ using UnityEngine;
 public class Health : MonoBehaviour
 {
     public HealthData healthData;
-    private Entity entity;
+    public Entity entity;
 
     private float currentHealth;
-    private bool isAlive = true;
-
-    public bool IsAlive => isAlive;
 
     void Start()
     {
@@ -27,7 +24,7 @@ public class Health : MonoBehaviour
     /// <summary> Can other target this entity, used to determine fighting target. </summary>
     public bool isValidTargetFor(Entity other)
     {
-        if (!isAlive)
+        if (!entity.IsEnabled)
             return false;
 
         if (!entity.IsEnabled)
@@ -38,7 +35,7 @@ public class Health : MonoBehaviour
 
     public void GetHit(float amount)
     {
-        if (!isAlive)
+        if (!entity.IsEnabled)
         {
             return;
         }
@@ -56,7 +53,7 @@ public class Health : MonoBehaviour
 
     void die()
     {
-        isAlive = false;
+        entity.IsEnabled = false;
 
         if (entity.animator != null)
             entity.animator.Play("Death", 0);
