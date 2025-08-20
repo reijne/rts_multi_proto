@@ -14,7 +14,20 @@ public class Entity : MonoBehaviour
     public new BoxCollider collider { get; private set; }
 
     // Used to determine whether this entity can still perform actions.
-    public bool IsEnabled = true;
+    private bool _isEnabled = true;
+
+    public bool IsEnabled
+    {
+        get => _isEnabled;
+        set
+        {
+            if (_isEnabled && !value) // only fire when going from true → false
+            {
+                onDisable?.Invoke();
+            }
+            _isEnabled = value;
+        }
+    }
     public event Action onDisable;
 
     // Possible health of this entity, does *not* need to exist,
