@@ -1,12 +1,8 @@
-using System;
 using UnityEngine;
 
 public class Spawning : MonoBehaviour
 {
     public SpawningData spawningData;
-
-    public event Action OnSelected;
-    public event Action OnDeselected;
 
     // Never exists if we have no prefab in data.
     GameObject spawnPointIndicator;
@@ -16,12 +12,6 @@ public class Spawning : MonoBehaviour
 
     float timeOfLastSpawn;
     int UnitQueue = 0;
-
-    void Awake()
-    {
-        // Hide it initially
-        // spawnPointIndicator.SetActive(false);
-    }
 
     void Start()
     {

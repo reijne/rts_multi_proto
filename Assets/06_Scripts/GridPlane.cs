@@ -1,4 +1,3 @@
-using System;
 using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.InputSystem.Utilities;
@@ -69,21 +68,18 @@ public class GridPlane : MonoBehaviour
     public static GridPlane singleton { get; private set; }
 
     [SerializeField]
-    private Grid grid;
+    Grid grid;
     public Grid Grid => grid;
     public Vector3 cellSize => grid.cellSize;
 
-    public Vector2Int GridSize { get; private set; }
-
-    public FlowField flowField { get; private set; }
-    public PopulatedFlowField populatedFlowField { get; private set; }
+    public Vector2Int GridSize;
 
     // Entities tracked by world cell position (x,z)
     public GridEntities entities { get; private set; }
 
-    private bool showFlowField = false;
-    private bool showCostField = false;
-    private bool showOccupancy = false;
+    bool showOccupancy = false;
+
+    new MeshCollider collider;
 
     void Awake()
     {
@@ -93,44 +89,29 @@ public class GridPlane : MonoBehaviour
             return;
         }
         singleton = this;
-        DontDestroyOnLoad(gameObject);
 
+        grid = GetComponentInChildren<Grid>();
+        collider = GetComponentInChildren<MeshCollider>();
         setGridSize();
         entities = new GridEntities(GridSize);
-        centerGridOnPlaneObject();
-        // scaleTextureToMatchGridSize();
+        AlignGridToCollider();
     }
 
     void setGridSize()
     {
-        int sizeX = Mathf.RoundToInt(
-            transform.localScale.x * 10 / grid.cellSize.x
-        );
-        int sizeY = Mathf.RoundToInt(
-            transform.localScale.z * 10 / grid.cellSize.z
-        );
+        Vector3 size = collider.bounds.size;
+        int sizeX = Mathf.CeilToInt(size.x / grid.cellSize.x);
+        int sizeY = Mathf.CeilToInt(size.z / grid.cellSize.z);
+
         GridSize = new Vector2Int(sizeX, sizeY);
     }
 
-    void centerGridOnPlaneObject()
+    void AlignGridToCollider()
     {
-        // Center the grid on this plane.
-        Vector3Int offset = new Vector3Int(GridSize.x / 2, 0, GridSize.y / 2);
-        grid.gameObject.transform.position -= offset;
-        gameObject.transform.position += offset;
-    }
+        Vector3 offset = collider.bounds.extents;
+        offset.y = 0;
 
-    void scaleTextureToMatchGridSize()
-    {
-        GetComponent<MeshRenderer>().material.mainTextureScale = new Vector2(
-            GridSize.x,
-            GridSize.y
-        );
-    }
-
-    void Start()
-    {
-        flowField = new FlowField(grid, GridSize);
+        grid.transform.position -= offset;
     }
 
     public void Spawn(Vector3Int loc, Entity ent)
@@ -176,47 +157,16 @@ public class GridPlane : MonoBehaviour
         return getEntitiesInRange(grid.WorldToCell(position), range).ToArray();
     }
 
-    void setDestination()
-    {
-        Game.GetHit()
-            .ifJust(hit =>
-            {
-                DebugHighlightCellBox(grid.WorldToCell(hit), Color.red);
-                // TODO: Store the created flow field for later use in case
-                // we want to move to the same location?
-                // Might not work when we have a different cost field hmmmm.
-                populatedFlowField = flowField.Create(hit);
-            });
-    }
-
     void Update()
     {
-        if (Input.GetMouseButtonDown(1))
-            setDestination();
-
-        if (Input.GetKeyDown(KeyCode.F))
-            showFlowField = !showFlowField;
-
-        if (Input.GetKeyDown(KeyCode.C))
-            showCostField = !showCostField;
-
         if (Input.GetKeyDown(KeyCode.G))
             showOccupancy = !showOccupancy;
     }
 
     void FixedUpdate()
     {
-        if (showFlowField)
-            flowField?.DebugDrawDirections();
-
         if (showOccupancy)
             debugHighlightOccupancy();
-    }
-
-    private void OnDrawGizmos()
-    {
-        if (showCostField)
-            flowField?.DebugDrawCostLabels();
     }
 
     void debugHighlightOccupancy()

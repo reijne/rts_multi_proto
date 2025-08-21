@@ -18,6 +18,7 @@ public class Moving : MonoBehaviour
         entity.OnSelected += () => showMoveTargetActive(true);
         entity.OnDeselected += () => showMoveTargetActive(false);
         entity.onDisable += () => removeMovingTarget(true);
+
         navMeshAgent = gameObject.AddComponent<NavMeshAgent>();
         navMeshAgent.speed = movingData.MovementSpeed;
         navMeshAgent.acceleration = movingData.Acceleration;

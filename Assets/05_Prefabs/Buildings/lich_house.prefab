@@ -12,6 +12,7 @@ GameObject:
   - component: {fileID: 33991798912505540}
   - component: {fileID: 23060441940367624}
   - component: {fileID: 1339157873627030813}
+  - component: {fileID: -8882103655314320508}
   m_Layer: 0
   m_Name: lich_house
   m_TagString: Untagged
@@ -109,6 +110,22 @@ BoxCollider:
   serializedVersion: 3
   m_Size: {x: 8.411446, y: 9.649782, z: 9.7319565}
   m_Center: {x: 0.017868523, y: 3.5851107, z: 0.0028619773}
+--- !u!208 &-8882103655314320508
+NavMeshObstacle:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1185082912798350}
+  m_Enabled: 1
+  serializedVersion: 3
+  m_Shape: 1
+  m_Extents: {x: 4.2060003, y: 4.8250003, z: 4.866}
+  m_MoveThreshold: 0.1
+  m_Carve: 1
+  m_CarveOnlyStationary: 1
+  m_Center: {x: 0.018000001, y: 3.5850003, z: 0.003}
+  m_TimeToStationary: 0.5
 --- !u!1001 &4246297829297214424
 PrefabInstance:
   m_ObjectHideFlags: 0

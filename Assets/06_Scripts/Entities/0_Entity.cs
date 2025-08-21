@@ -126,7 +126,7 @@ public class Entity : MonoBehaviour
     public void Select()
     {
         isSelected = true;
-        GetComponentInChildren<Renderer>().material.color = Color.gray;
+        GetComponentInChildren<Renderer>().material.color = Color.green;
         OnSelected?.Invoke();
     }
 

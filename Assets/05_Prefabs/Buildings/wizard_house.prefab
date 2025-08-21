@@ -12,6 +12,7 @@ GameObject:
   - component: {fileID: 33150919666518030}
   - component: {fileID: 23959816328617694}
   - component: {fileID: 7522234664233683961}
+  - component: {fileID: 3258060464678407603}
   m_Layer: 0
   m_Name: wizard_house
   m_TagString: Untagged
@@ -111,6 +112,22 @@ BoxCollider:
   serializedVersion: 3
   m_Size: {x: 8.404898, y: 8.177113, z: 13.362827}
   m_Center: {x: 0.09244919, y: 2.8487768, z: -0.48990488}
+--- !u!208 &3258060464678407603
+NavMeshObstacle:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1640908652775104}
+  m_Enabled: 1
+  serializedVersion: 3
+  m_Shape: 1
+  m_Extents: {x: 4.202, y: 5.089, z: 6.681}
+  m_MoveThreshold: 0.1
+  m_Carve: 1
+  m_CarveOnlyStationary: 1
+  m_Center: {x: 0.09200001, y: 3.8490002, z: -0.49}
+  m_TimeToStationary: 0.5
 --- !u!1001 &421503128995969407
 PrefabInstance:
   m_ObjectHideFlags: 0
