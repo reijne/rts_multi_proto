@@ -4,15 +4,12 @@ using UnityEngine.AI;
 public class Moving : MonoBehaviour
 {
     public MovingData movingData;
-    public GameObject moveIndicatorPrefab;
-    public GameObject moveIndicator;
-
     public Entity entity { get; private set; }
 
     NavMeshAgent navMeshAgent;
 
+    GameObject moveIndicator;
     MovingTarget? movingTarget;
-
     Vector3Int gridPosition;
 
     void Awake()
@@ -54,22 +51,16 @@ public class Moving : MonoBehaviour
 
         navMeshAgent.SetDestination(dest);
         navMeshAgent.stoppingDistance = movingData.StoppingDistance;
-        UpdateMoveIndicator(dest);
+        updateMoveIndicator(dest);
     }
 
-    void UpdateMoveIndicator(Vector3 dest)
+    void updateMoveIndicator(Vector3 dest)
     {
-        if (moveIndicator == null)
-        {
-            if (moveIndicatorPrefab != null)
-                moveIndicator = Instantiate(
-                    moveIndicatorPrefab,
-                    dest,
-                    Quaternion.identity
-                );
-        }
-        else
-            moveIndicator.transform.position = dest;
+        moveIndicator = Game.InstantiateOrMove(
+            movingData.MoveIndicatorPrefab,
+            moveIndicator,
+            dest
+        );
     }
 
     // Set a target transform to move towards, essentially following
@@ -97,7 +88,7 @@ public class Moving : MonoBehaviour
             navMeshAgent.SetDestination(
                 movingTarget.Value.entity.transform.position
             );
-            UpdateMoveIndicator(movingTarget.Value.entity.transform.position);
+            updateMoveIndicator(movingTarget.Value.entity.transform.position);
         }
 
         SetMoving(navMeshAgent.velocity.magnitude > 0);

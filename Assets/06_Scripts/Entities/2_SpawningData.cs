@@ -15,4 +15,14 @@ public class SpawningData : ScriptableObject
     private int unitCost = 1;
 
     public int UnitCost => unitCost;
+
+    [SerializeField]
+    private GameObject spawnPointIndicatorPrefab;
+
+    public GameObject SpawnPointIndicatorPrefab => spawnPointIndicatorPrefab;
+
+    [SerializeField]
+    private GameObject entityPrefab;
+
+    public GameObject EntityPrefab => entityPrefab;
 }

@@ -4,7 +4,12 @@ using UnityEngine;
 public class Entity : MonoBehaviour
 {
     public EntityData entityData;
-    public Animator animator;
+
+    // Optional attributes
+    public Animator animator { get; private set; }
+    public Health health { get; private set; }
+    public Moving moving { get; private set; }
+    public Fighting fighting { get; private set; }
 
     // Selection
     public event Action OnSelected;
@@ -12,33 +17,25 @@ public class Entity : MonoBehaviour
     private bool isSelected = false;
     public bool IsSelected => isSelected;
     public new BoxCollider collider { get; private set; }
-    public float size;
+    public float size { get; private set; }
 
     // Used to determine whether this entity can still perform actions.
-    private bool _isEnabled = true;
+    private bool isEnabled = true;
 
     public bool IsEnabled
     {
-        get => _isEnabled;
+        get => isEnabled;
         set
         {
-            if (_isEnabled && !value) // only fire when going from true → false
+            if (isEnabled && !value) // only fire when going from true → false
             {
                 onDisable?.Invoke();
+                Deselect();
             }
-            _isEnabled = value;
+            isEnabled = value;
         }
     }
     public event Action onDisable;
-
-    // Possible health of this entity, does *not* need to exist,
-    public Health health;
-
-    // Possible moving component of this entity, does *not* need to exist.
-    public Moving moving;
-
-    // Possible fighting component of this entity, does *not* need to exist.
-    public Fighting fighting;
 
     void Awake()
     {

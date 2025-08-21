@@ -3,7 +3,7 @@ using UnityEngine;
 public class Health : MonoBehaviour
 {
     public HealthData healthData;
-    public Entity entity;
+    Entity entity;
 
     private float currentHealth;
 

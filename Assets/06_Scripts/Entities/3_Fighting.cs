@@ -4,12 +4,12 @@ using UnityEngine.InputSystem.Utilities;
 public class Fighting : MonoBehaviour
 {
     public FightingData fightingData;
-    private Entity entity;
-    private Moving moving;
-    private float lastAttackTime = Mathf.NegativeInfinity;
-    private Health currentTargetEnemy;
+    Entity entity;
+    Moving moving;
+    float lastAttackTime = Mathf.NegativeInfinity;
+    Entity currentTargetEnemy;
 
-    private bool drawGizmos = false;
+    bool drawGizmos = false;
 
     void Start()
     {
@@ -33,7 +33,7 @@ public class Fighting : MonoBehaviour
         Gizmos.DrawWireSphere(transform.position, fightingData.Ranges.vision);
     }
 
-    private float nextCheckTime = 1.5f;
+    float nextCheckTime = 1.5f;
 
     void Update()
     {
@@ -49,10 +49,10 @@ public class Fighting : MonoBehaviour
         attack();
     }
 
-    float distanceTo(Health target) =>
+    float distanceTo(Entity target) =>
         Vector3.Distance(transform.position, target.transform.position);
 
-    bool isWithinVision(Health target) =>
+    bool isWithinVision(Entity target) =>
         distanceTo(target) <= fightingData.Ranges.vision;
 
     void updateClosestEnemy()
@@ -63,7 +63,7 @@ public class Fighting : MonoBehaviour
         // units chase em, instead of switching to the new closest one.
         if (
             currentTargetEnemy != null
-            && currentTargetEnemy.entity.IsEnabled
+            && currentTargetEnemy.IsEnabled
             && isWithinVision(currentTargetEnemy)
         )
         {
@@ -73,20 +73,20 @@ public class Fighting : MonoBehaviour
         currentTargetEnemy = getClosetEnemyInSight();
     }
 
-    Health getClosetEnemyInSight()
+    Entity getClosetEnemyInSight()
     {
         ReadOnlyArray<Entity> inRange = GridPlane.singleton.GetEntitiesInRange(
             transform.position,
             fightingData.Ranges.vision
         );
 
-        Health closestEnemy = null;
+        Entity closestEnemy = null;
         float closestDistance = float.PositiveInfinity;
 
         for (int i = 0; i < inRange.Count; i++)
         {
-            Health enemy = inRange[i].health;
-            if (enemy == null || !enemy.isValidTargetFor(entity))
+            Entity enemy = inRange[i];
+            if (enemy.health == null || !enemy.health.isValidTargetFor(entity))
                 continue;
 
             float distanceToEnemy = distanceTo(enemy);
@@ -116,7 +116,7 @@ public class Fighting : MonoBehaviour
             if (moving != null)
                 moving.MoveTo(
                     new MovingTarget(
-                        currentTargetEnemy.entity,
+                        currentTargetEnemy,
                         // TODO: Make this into actual value instead of magic number?
                         // Idea is we move slightly close than actual attack range so we have
                         // time to attack in case someone moves.
@@ -132,7 +132,7 @@ public class Fighting : MonoBehaviour
         }
 
         transform.LookAt(currentTargetEnemy.transform);
-        currentTargetEnemy.GetHit(fightingData.Damage);
+        currentTargetEnemy.health.GetHit(fightingData.Damage);
         lastAttackTime = Time.time;
 
         if (entity.animator != null)

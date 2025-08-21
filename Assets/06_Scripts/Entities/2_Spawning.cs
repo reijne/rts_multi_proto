@@ -3,15 +3,16 @@ using UnityEngine;
 
 public class Spawning : MonoBehaviour
 {
-    public SpawningData spawningEntityData;
-    public GameObject spawnPointIndicator;
-    public GameObject prefab;
+    public SpawningData spawningData;
 
     public event Action OnSelected;
     public event Action OnDeselected;
 
+    // Never exists if we have no prefab in data.
+    GameObject spawnPointIndicator;
+
     // Private attributes that are guaranteed to exist.
-    private Entity entity;
+    Entity entity;
 
     float timeOfLastSpawn;
     int UnitQueue = 0;
@@ -27,13 +28,17 @@ public class Spawning : MonoBehaviour
         timeOfLastSpawn = Time.time;
         entity = GetComponent<Entity>();
 
-        entity.OnSelected += showSpawnPoint;
-        entity.OnDeselected += hideSpawnPoint;
+        entity.OnSelected += () => showSpawnPointVisibility(true);
+        entity.OnDeselected += () => showSpawnPointVisibility(false);
     }
 
-    void showSpawnPoint() => spawnPointIndicator.SetActive(true);
+    void showSpawnPointVisibility(bool show)
+    {
+        if (spawnPointIndicator == null)
+            return;
 
-    void hideSpawnPoint() => spawnPointIndicator.SetActive(false);
+        spawnPointIndicator.SetActive(show);
+    }
 
     void Update()
     {
@@ -46,14 +51,19 @@ public class Spawning : MonoBehaviour
         spawn();
     }
 
+    void updateSpawnPointIndicator(Vector3 dest)
+    {
+        spawnPointIndicator = Game.InstantiateOrMove(
+            spawningData.SpawnPointIndicatorPrefab,
+            spawnPointIndicator,
+            dest
+        );
+    }
+
     void handleMouse()
     {
         if (entity.IsSelected && Input.GetMouseButtonDown(1))
-            Game.GetHit()
-                .ifJust(hit =>
-                {
-                    spawnPointIndicator.transform.position = hit;
-                });
+            Game.GetHit().ifJust(updateSpawnPointIndicator);
     }
 
     public void AddUnitToQueue(int amount)
@@ -73,7 +83,7 @@ public class Spawning : MonoBehaviour
             Input.GetKeyDown(KeyCode.Q)
             && Input.GetKey(KeyCode.LeftShift)
             && ResourceController.singleton.TrySpendEnergy(
-                spawningEntityData.UnitCost * 5
+                spawningData.UnitCost * 5
             )
         )
         {
@@ -82,7 +92,7 @@ public class Spawning : MonoBehaviour
         else if (
             Input.GetKeyDown(KeyCode.Q)
             && ResourceController.singleton.TrySpendEnergy(
-                spawningEntityData.UnitCost
+                spawningData.UnitCost
             )
         )
         {
@@ -94,7 +104,7 @@ public class Spawning : MonoBehaviour
     {
         if (
             UnitQueue <= 0
-            || timeOfLastSpawn + spawningEntityData.Cooldown > Time.time
+            || timeOfLastSpawn + spawningData.Cooldown > Time.time
         )
             return;
 
@@ -135,7 +145,7 @@ public class Spawning : MonoBehaviour
             instantiatePosition.y = 0;
 
             GameObject ent = Instantiate(
-                prefab,
+                spawningData.EntityPrefab,
                 instantiatePosition,
                 Quaternion.identity
             );

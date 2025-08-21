@@ -13,6 +13,11 @@ public class MovingData : ScriptableObject
     public float MovementSpeed => movementSpeed;
 
     [SerializeField]
+    private GameObject moveIndicatorPrefab;
+
+    public GameObject MoveIndicatorPrefab => moveIndicatorPrefab;
+
+    [SerializeField]
     private float acceleration = 200f;
 
     // Speed at which the entity accelerates from standing still, or brakes.

@@ -140,6 +140,22 @@ public class Game : MonoBehaviour
         return Maybe<Vector3>.Nothing;
     }
 
+    public static GameObject InstantiateOrMove(
+        GameObject prefab,
+        GameObject objectToMove,
+        Vector3 destination
+    )
+    {
+        if (prefab == null)
+            return null;
+
+        if (objectToMove == null)
+            return Instantiate(prefab, destination, Quaternion.identity);
+
+        objectToMove.transform.position = destination;
+        return objectToMove;
+    }
+
     public static Exception Quit(string message)
     {
         Debug.LogError(message);
