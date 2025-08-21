@@ -16,4 +16,3 @@ MonoBehaviour:
   acceleration: 200
   angularSpeed: 360
   stoppingDistance: 0.1
-  collisionAvoidance: 50
