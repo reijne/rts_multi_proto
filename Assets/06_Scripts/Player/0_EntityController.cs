@@ -1,6 +1,5 @@
 using System;
 using System.Collections.Generic;
-using System.Linq;
 using UnityEngine;
 
 public class EntityController : MonoBehaviour
@@ -102,6 +101,8 @@ public class EntityController : MonoBehaviour
         Vector3 desiredLocation = GridPlane.singleton.Grid.GetCellCenterWorld(
             GridPlane.singleton.Grid.WorldToCell(hit)
         );
+
+        desiredLocation.y = hit.y;
         int selectionCount = selection.Count;
         List<Moving> movingSelection = new List<Moving>();
 
@@ -144,8 +145,7 @@ public class EntityController : MonoBehaviour
         );
 
         // TODO: use unitSize _per_ unit to allow mixed formations.
-        Vector3 size = movingSelection[0].entity.collider.size;
-        float unitSize = 1.5f * Mathf.Max(size.x, size.z);
+        float unitSize = 1.5f * movingSelection[0].entity.size;
 
         for (int i = 0; i < movingSelection.Count; i++)
         {

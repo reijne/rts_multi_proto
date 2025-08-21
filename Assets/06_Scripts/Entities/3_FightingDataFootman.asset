@@ -12,6 +12,8 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 2feb8c14587844af08ccc1afabbe1466, type: 3}
   m_Name: 3_FightingDataFootman
   m_EditorClassIdentifier: 
+  ranges:
+    attack: 2
+    vision: 10
   damage: 25
-  range: 2
   cooldown: 1

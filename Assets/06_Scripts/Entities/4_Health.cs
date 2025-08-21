@@ -27,9 +27,6 @@ public class Health : MonoBehaviour
         if (!entity.IsEnabled)
             return false;
 
-        if (!entity.IsEnabled)
-            return false;
-
         return entity.entityData.Actor != other.entityData.Actor;
     }
 

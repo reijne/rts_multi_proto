@@ -1,5 +1,3 @@
-using System;
-using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.InputSystem.Utilities;
 
@@ -10,19 +8,12 @@ public class Fighting : MonoBehaviour
     private Moving moving;
     private float lastAttackTime = Mathf.NegativeInfinity;
     private Health currentTargetEnemy;
-    private CellType targetFilter;
 
     private bool drawGizmos = false;
 
     void Start()
     {
         entity = GetComponent<Entity>();
-
-        // TODO: Expand for buildings as well.
-        if (entity.entityData.Actor == EntityActor.player)
-            targetFilter = CellType.EnemyUnit;
-        else
-            targetFilter = CellType.Unit;
 
         // Possible attributes.
         moving = GetComponent<Moving>();
@@ -52,7 +43,7 @@ public class Fighting : MonoBehaviour
         if (!entity.IsEnabled || Time.time < nextCheckTime)
             return;
 
-        nextCheckTime = Time.time + UnityEngine.Random.Range(1f, 1.5f);
+        nextCheckTime = Time.time + Random.Range(1f, 1.5f);
 
         updateClosestEnemy();
         attack();
@@ -72,12 +63,11 @@ public class Fighting : MonoBehaviour
         // units chase em, instead of switching to the new closest one.
         if (
             currentTargetEnemy != null
-            // TODO: Perhaps decouple this component from Health somehow?
             && currentTargetEnemy.entity.IsEnabled
             && isWithinVision(currentTargetEnemy)
         )
         {
-            return;
+            // return;
         }
 
         currentTargetEnemy = getClosetEnemyInSight();
@@ -99,11 +89,20 @@ public class Fighting : MonoBehaviour
             if (enemy == null || !enemy.isValidTargetFor(entity))
                 continue;
 
-            if (distanceTo(enemy) < closestDistance)
+            float distanceToEnemy = distanceTo(enemy);
+            if (distanceToEnemy < closestDistance)
+            {
                 closestEnemy = enemy;
+                closestDistance = distanceToEnemy;
+            }
         }
 
         return closestEnemy;
+    }
+
+    float getAttackRange()
+    {
+        return entity.size + fightingData.Ranges.attack;
     }
 
     void attack()
@@ -111,15 +110,18 @@ public class Fighting : MonoBehaviour
         if (currentTargetEnemy == null)
             return;
 
-        if (distanceTo(currentTargetEnemy) > fightingData.Ranges.attack)
+        float attackRange = getAttackRange();
+        if (distanceTo(currentTargetEnemy) > attackRange)
         {
             if (moving != null)
                 moving.MoveTo(
-                    currentTargetEnemy.transform,
-                    // TODO: Make this into actual value instead of magic number?
-                    // Idea is we move slightly close than actual attack range so we have
-                    // time to attack in case someone moves.
-                    fightingData.Ranges.attack * 0.9f
+                    new MovingTarget(
+                        currentTargetEnemy.entity,
+                        // TODO: Make this into actual value instead of magic number?
+                        // Idea is we move slightly close than actual attack range so we have
+                        // time to attack in case someone moves.
+                        attackRange * 0.9f
+                    )
                 );
             return;
         }

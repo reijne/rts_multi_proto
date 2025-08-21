@@ -12,6 +12,7 @@ public class Entity : MonoBehaviour
     private bool isSelected = false;
     public bool IsSelected => isSelected;
     public new BoxCollider collider { get; private set; }
+    public float size;
 
     // Used to determine whether this entity can still perform actions.
     private bool _isEnabled = true;
@@ -42,6 +43,8 @@ public class Entity : MonoBehaviour
     void Awake()
     {
         collider = GetComponent<BoxCollider>();
+        size = Mathf.Max(collider.size.x, collider.size.z);
+
         animator = GetComponent<Animator>();
 
         // Warning: Does *not* need to exist for an Entity.

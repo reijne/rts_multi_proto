@@ -18,26 +18,27 @@ public class Moving : MonoBehaviour
     void Awake()
     {
         entity = GetComponent<Entity>();
-        entity.OnSelected += () => setMoveTargetActive(true);
-        entity.OnDeselected += () => setMoveTargetActive(false);
-        entity.onDisable += onDisabled;
+        entity.OnSelected += () => showMoveTargetActive(true);
+        entity.OnDeselected += () => showMoveTargetActive(false);
+        entity.onDisable += () => removeMovingTarget(true);
         navMeshAgent = gameObject.AddComponent<NavMeshAgent>();
         navMeshAgent.speed = movingData.MovementSpeed;
         navMeshAgent.acceleration = movingData.Acceleration;
         navMeshAgent.angularSpeed = movingData.AngularSpeed;
     }
 
-    void setMoveTargetActive(bool active)
+    void showMoveTargetActive(bool active)
     {
         if (moveIndicator != null)
             moveIndicator.SetActive(active && entity.IsEnabled);
     }
 
-    void onDisabled()
+    void removeMovingTarget(bool performDestroy)
     {
-        setMoveTargetActive(false);
         movingTarget = null;
-        navMeshAgent.isStopped = true;
+
+        if (performDestroy)
+            Destroy(moveIndicator);
     }
 
     void Start()
@@ -73,10 +74,17 @@ public class Moving : MonoBehaviour
 
     // Set a target transform to move towards, essentially following
     // that transform.
-    public void MoveTo(Transform target, float closeEnoughDistance)
+    public void MoveTo(MovingTarget newTarget)
     {
-        movingTarget = new MovingTarget(target, closeEnoughDistance);
-        navMeshAgent.stoppingDistance = closeEnoughDistance;
+        movingTarget = newTarget;
+        navMeshAgent.stoppingDistance = newTarget.closeEnoughDistance;
+
+        // Remove the target if it is disabled and that is still the target.
+        newTarget.entity.onDisable +=
+            movingTarget.HasValue
+            && movingTarget.Value.entity == newTarget.entity
+                ? () => removeMovingTarget(false)
+                : () => { };
     }
 
     void FixedUpdate()
@@ -84,12 +92,12 @@ public class Moving : MonoBehaviour
         if (!entity.IsEnabled)
             return;
 
-        navMeshAgent.avoidancePriority = movingData.CollisionAvoidance;
-
-        if (movingTarget.HasValue && movingTarget.Value.transform != null)
+        if (movingTarget.HasValue)
         {
-            navMeshAgent.SetDestination(movingTarget.Value.transform.position);
-            UpdateMoveIndicator(movingTarget.Value.transform.position);
+            navMeshAgent.SetDestination(
+                movingTarget.Value.entity.transform.position
+            );
+            UpdateMoveIndicator(movingTarget.Value.entity.transform.position);
         }
 
         SetMoving(navMeshAgent.velocity.magnitude > 0);
@@ -112,17 +120,19 @@ public class Moving : MonoBehaviour
     {
         if (entity.animator != null)
             entity.animator.SetBool("isMoving", moving);
+
+        showMoveTargetActive(moving);
     }
 }
 
-struct MovingTarget
+public struct MovingTarget
 {
-    public readonly Transform transform;
+    public readonly Entity entity;
     public readonly float closeEnoughDistance;
 
-    public MovingTarget(Transform transform, float closeEnoughDistance)
+    public MovingTarget(Entity entity, float closeEnoughDistance)
     {
-        this.transform = transform;
+        this.entity = entity;
         this.closeEnoughDistance = closeEnoughDistance;
     }
 }
