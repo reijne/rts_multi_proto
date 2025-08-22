@@ -137,7 +137,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 6bc3e14a4d407442eb280bc745cbbfae, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  spawningData: {fileID: 0}
+  spawningData: {fileID: 11400000, guid: a1c47c34d19694d85bcca189cd5b49d0, type: 2}
 --- !u!208 &8926592233282884272
 NavMeshObstacle:
   m_ObjectHideFlags: 0

@@ -9,8 +9,7 @@ public class EnemyController : MonoBehaviour
     [SerializeField]
     GameObject enemyPrefab;
 
-    readonly List<Entity> entities = new List<Entity>();
-    readonly List<Rigidbody> enemies = new List<Rigidbody>();
+    List<Entity> enemies = new List<Entity>();
 
     void Awake()
     {
@@ -29,7 +28,7 @@ public class EnemyController : MonoBehaviour
 
     public void Add(Entity entity)
     {
-        entities.Add(entity);
+        enemies.Add(entity);
         Moving movingEntity = entity.GetComponent<Moving>();
         if (movingEntity != null)
         {
@@ -40,7 +39,7 @@ public class EnemyController : MonoBehaviour
 
     public void Remove(Entity entity)
     {
-        entities.Remove(entity);
+        enemies.Remove(entity);
     }
 
     private void spawnEnemy(Vector3 minimum, Vector3 maximum)
@@ -59,7 +58,7 @@ public class EnemyController : MonoBehaviour
             Quaternion.identity
         );
 
-        enemies.Add(newEnemy.GetComponent<Rigidbody>());
+        enemies.Add(newEnemy.GetComponent<Entity>());
     }
 
     private void spawnEnemies(int amountOfSpawns)
@@ -87,9 +86,7 @@ public class EnemyController : MonoBehaviour
         int enemiesCount = enemies.Count;
         for (int i = 0; i < enemiesCount; i++)
         {
-            Debug.Log($"destroyEnemies enemy idx: {i}");
-            Rigidbody enemy = enemies[i];
-            Destroy(enemy.gameObject);
+            Destroy(enemies[i].gameObject);
         }
         enemies.Clear();
     }
@@ -126,27 +123,14 @@ public class EnemyController : MonoBehaviour
                 Vector3 moveDirection = flowField.GetDirection(
                     enemy.transform.position
                 );
-                enemy.linearVelocity = moveDirection * 5;
+                // enemy.linearVelocity = moveDirection * 5;
             }
         );
     }
 
-    void FixedUpdate()
-    {
-        // TODO: Fix this check to not be the initialized, but if we have a fully created boi.
-        if (GridPlane.singleton.populatedFlowField != null)
-            moveEnemies(GridPlane.singleton.populatedFlowField);
-    }
+    void FixedUpdate() { }
 
-    void performActionOnEntities(Action<Entity, int> performAction)
-    {
-        for (int i = 0; i < entities.Count; i++)
-        {
-            performAction(entities[i], i);
-        }
-    }
-
-    void performActionOnEnemies(Action<Rigidbody, int> performAction)
+    void performActionOnEnemies(Action<Entity, int> performAction)
     {
         for (int i = 0; i < enemies.Count; i++)
         {

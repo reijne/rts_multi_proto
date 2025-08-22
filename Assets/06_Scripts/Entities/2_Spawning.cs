@@ -1,3 +1,4 @@
+using System;
 using UnityEngine;
 
 public class Spawning : MonoBehaviour
@@ -12,6 +13,14 @@ public class Spawning : MonoBehaviour
 
     float timeOfLastSpawn;
     int UnitQueue = 0;
+
+    void Awake()
+    {
+        if (spawningData.EntityPrefab == null)
+            throw new Exception(
+                "Spawning: requires an entity prefab to spawn (instantiate)"
+            );
+    }
 
     void Start()
     {
