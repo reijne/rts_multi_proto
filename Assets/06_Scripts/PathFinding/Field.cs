@@ -344,44 +344,44 @@ public class FlowField
         }
     }
 
-    GUIStyle _costStyle;
+    // GUIStyle _costStyle;
 
-    void EnsureCostStyle()
-    {
-        if (_costStyle != null)
-            return;
-        _costStyle = new GUIStyle(EditorStyles.boldLabel)
-        {
-            fontSize = 12,
-            alignment = TextAnchor.MiddleCenter,
-            normal = { textColor = Color.white },
-        };
-    }
+    // void EnsureCostStyle()
+    // {
+    //     if (_costStyle != null)
+    //         return;
+    //     _costStyle = new GUIStyle(EditorStyles.boldLabel)
+    //     {
+    //         fontSize = 12,
+    //         alignment = TextAnchor.MiddleCenter,
+    //         normal = { textColor = Color.white },
+    //     };
+    // }
 
     /// <summary>Writes Cost / BestCost on each cell in the Scene view.</summary>
-    public void DebugDrawCostLabels(
-        bool showBestCost = false,
-        float yOffset = 0.05f
-    )
-    {
-        EnsureCostStyle();
+    // public void DebugDrawCostLabels(
+    //     bool showBestCost = false,
+    //     float yOffset = 0.05f
+    // )
+    // {
+    //     EnsureCostStyle();
 
-        for (int x = 0; x < width; x++)
-        for (int z = 0; z < height; z++)
-        {
-            var c = gridCells[x, z];
-            var pos = c.WorldPosition + Vector3.up * yOffset;
+    //     for (int x = 0; x < width; x++)
+    //     for (int z = 0; z < height; z++)
+    //     {
+    //         var c = gridCells[x, z];
+    //         var pos = c.WorldPosition + Vector3.up * yOffset;
 
-            string best =
-                (c.BestCost == ushort.MaxValue) ? "∞" : c.BestCost.ToString();
-            string text = showBestCost ? $"{c.Cost}/{best}" : c.Cost.ToString();
+    //         string best =
+    //             (c.BestCost == ushort.MaxValue) ? "∞" : c.BestCost.ToString();
+    //         string text = showBestCost ? $"{c.Cost}/{best}" : c.Cost.ToString();
 
-            // optional faint drop shadow for readability
-            Handles.color = new Color(0, 0, 0, 0.5f);
-            Handles.Label(pos + new Vector3(0.01f, 0, 0.01f), text, _costStyle);
+    //         // optional faint drop shadow for readability
+    //         Handles.color = new Color(0, 0, 0, 0.5f);
+    //         Handles.Label(pos + new Vector3(0.01f, 0, 0.01f), text, _costStyle);
 
-            Handles.color = Color.white;
-            Handles.Label(pos, text, _costStyle);
-        }
-    }
+    //         Handles.color = Color.white;
+    //         Handles.Label(pos, text, _costStyle);
+    //     }
+    // }
 }

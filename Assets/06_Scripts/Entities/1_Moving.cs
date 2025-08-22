@@ -15,8 +15,8 @@ public class Moving : MonoBehaviour
     void Awake()
     {
         entity = GetComponent<Entity>();
-        entity.OnSelected += () => showMoveTargetActive(true);
-        entity.OnDeselected += () => showMoveTargetActive(false);
+        // entity.OnSelected += () => showMoveTargetActive(true);
+        // entity.OnDeselected += () => showMoveTargetActive(false);
         entity.onDisable += () => removeMovingTarget(true);
 
         navMeshAgent = gameObject.AddComponent<NavMeshAgent>();

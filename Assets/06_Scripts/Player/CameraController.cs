@@ -61,7 +61,9 @@ public class CameraController : NetworkBehaviour
         float scroll =
             Input.GetAxis("Mouse ScrollWheel") * zoomSpeed * Time.deltaTime;
 
-        float newY = Mathf.Clamp(transform.position.y + scroll, minY, maxY);
+        // TODO: Dynamically determine the min and max y based on the
+        // current floor height
+        float newY = Mathf.Clamp(transform.position.y - scroll, minY, maxY);
 
         Vector3 pos = transform.position;
         pos.y = newY;

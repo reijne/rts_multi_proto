@@ -59,6 +59,20 @@ public class Game : MonoBehaviour
 {
     public static Game singleton { get; private set; }
 
+    public static readonly Color[] DEFAULT_COLORS = new Color[]
+    {
+        Color.black,
+        Color.white,
+        Color.blue,
+        Color.cyan,
+        Color.gray,
+        Color.green,
+        Color.magenta,
+        Color.red,
+        Color.white,
+        Color.yellow,
+    };
+
     // Settings for the game mode of our current instance.
     private GameMode gameMode = GameMode.SinglePlayer;
     public bool isMulti => gameMode == GameMode.MultiPlayer;

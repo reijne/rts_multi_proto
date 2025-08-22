@@ -53,6 +53,11 @@ public class EntityController : MonoBehaviour
         handleKeyboard();
     }
 
+    void LateUpdate()
+    {
+        EntitySelectionDisplay.singleton.DrawForEntities(selection);
+    }
+
     void OnGUI()
     {
         showSelectionBox();

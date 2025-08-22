@@ -18,6 +18,7 @@ public class Entity : MonoBehaviour
     public bool IsSelected => isSelected;
     public new BoxCollider collider { get; private set; }
     public float size { get; private set; }
+    public float halfSize { get; private set; }
 
     // Used to determine whether this entity can still perform actions.
     private bool isEnabled = true;
@@ -41,6 +42,7 @@ public class Entity : MonoBehaviour
     {
         collider = GetComponent<BoxCollider>();
         size = Mathf.Max(collider.size.x, collider.size.z);
+        halfSize = size / 2f;
 
         animator = GetComponent<Animator>();
 
@@ -126,14 +128,21 @@ public class Entity : MonoBehaviour
     public void Select()
     {
         isSelected = true;
-        GetComponentInChildren<Renderer>().material.color = Color.green;
         OnSelected?.Invoke();
     }
 
     public void Deselect()
     {
         isSelected = false;
-        GetComponentInChildren<Renderer>().material.color = Color.white;
         OnDeselected?.Invoke();
+    }
+
+    /// <summary> Can other target this, used to determine fighting target. </summary>
+    public bool isDifferentTeam(Entity other)
+    {
+        if (!IsEnabled)
+            return false;
+
+        return entityData.Actor != other.entityData.Actor;
     }
 }

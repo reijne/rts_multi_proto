@@ -86,7 +86,7 @@ public class Fighting : MonoBehaviour
         for (int i = 0; i < inRange.Count; i++)
         {
             Entity enemy = inRange[i];
-            if (enemy.health == null || !enemy.health.isValidTargetFor(entity))
+            if (enemy.health == null || !enemy.isDifferentTeam(entity))
                 continue;
 
             float distanceToEnemy = distanceTo(enemy);

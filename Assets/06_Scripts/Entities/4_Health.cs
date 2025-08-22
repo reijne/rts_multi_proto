@@ -21,15 +21,6 @@ public class Health : MonoBehaviour
         }
     }
 
-    /// <summary> Can other target this entity, used to determine fighting target. </summary>
-    public bool isValidTargetFor(Entity other)
-    {
-        if (!entity.IsEnabled)
-            return false;
-
-        return entity.entityData.Actor != other.entityData.Actor;
-    }
-
     public void GetHit(float amount)
     {
         if (!entity.IsEnabled)
