@@ -5,12 +5,13 @@ public class Health : MonoBehaviour
     public HealthData healthData;
     Entity entity;
 
-    private float currentHealth;
+    public float currentHealth { get; private set; }
 
     void Start()
     {
         currentHealth = healthData.Health;
         entity = GetComponent<Entity>();
+        HealthBarDisplay.singleton.Add(entity);
     }
 
     void Update()
@@ -47,6 +48,7 @@ public class Health : MonoBehaviour
             entity.animator.Play("Death", 0);
 
         EntityController.singleton.Remove(entity);
+        HealthBarDisplay.singleton.Remove(entity);
         Destroy(gameObject, 10f);
     }
 }

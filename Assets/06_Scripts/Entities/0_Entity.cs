@@ -18,6 +18,7 @@ public class Entity : MonoBehaviour
     public bool IsSelected => isSelected;
     public new BoxCollider collider { get; private set; }
     public float size { get; private set; }
+    public float height { get; private set; }
     public float halfSize { get; private set; }
 
     // Used to determine whether this entity can still perform actions.
@@ -41,8 +42,14 @@ public class Entity : MonoBehaviour
     void Awake()
     {
         collider = GetComponent<BoxCollider>();
-        size = Mathf.Max(collider.size.x, collider.size.z);
+        size = Mathf.Max(
+            collider.size.x * transform.localScale.x,
+            collider.size.z * transform.localScale.z
+        );
+
         halfSize = size / 2f;
+        height = collider.size.y * transform.localScale.y;
+        Debug.Log($"Entity height: {height}");
 
         animator = GetComponent<Animator>();
 
